@@ -1,4 +1,5 @@
 import numpy as np
+from math import sqrt
 
 class MDP():
 
@@ -6,6 +7,10 @@ class MDP():
         #Origin at Top left
         self.GRID_SIZE_X = 6
         self.GRID_SIZE_Y = 5
+
+        # Number of possible actions for player and Minotaur 
+        self.n_actions_p = 5    
+        self.n_actions_m = 5    #NOTE:THIS CAN BE SET TO 4/5 for part (c for eg.)
 
         '''State'''
         # position of player
@@ -30,8 +35,9 @@ class MDP():
         # Container for walls
         self.walls = np.zeros((self.GRID_SIZE_X, self.GRID_SIZE_Y, 4), dtype=np.int)
         
-        # Container for storing forbidden actions for player
-        self.forbidden_actions = np.zeros((5,), dtype=np.int)
+        # State transition matrix
+        self.p_sHat = np.zeros((self.n_actions_p,self.n_actions_m))
+
         '''Member Function''' 
         self.define_wall()
         # State transition probabilities
@@ -83,6 +89,18 @@ class MDP():
         self.walls[4:self.GRID_SIZE_X, 1,3] = 1
         self.walls[4:self.GRID_SIZE_X, 2,1] = 1
     
+    def check_wall_constraint(self, forbidden_actions):
+        if self.walls[self.p, 0] == 1:      #player's LEFT side is blocked
+            forbidden_actions[0] = 1
+        elif self.walls[self.p, 1] == 1:      #player's TOP side is blocked
+            forbidden_actions[1] = 1
+        elif self.walls[self.p, 2] == 1:      #player's RIGHT side is blocked
+            forbidden_actions[2] = 1
+        elif self.walls[self.p, 3] == 1:      #player's BOTTOM side is blocked
+            forbidden_actions[3] = 1
+        
+        return forbidden_actions
+
     def calc_transition_prob(self):
         '''
         This function takes self.p, self.m as inputs
@@ -91,21 +109,47 @@ class MDP():
 
         State transition matrix:    p_sHat (5x5 because 5 actions possible for p and m each)
 
-        p_actions →        0                   1              2               3               4   
+        p_actions →        0                   1              2                 3               4   
         m_actions ↓
-                    0   p_left,m_left       p_up,m_left     and so on...
-                    1   p_up,m_up           p_up,m_up
-                    2   p_right,m_right     p_up,m_right
-                    3   p_down,m_down       p_up,m_down
-                    4   p_stay,m_stay       p_up,m_stay
+                    0   p_left,m_left       p_up,m_left     ...
+                    1   p_left,m_up           p_up,m_up     .
+                    2   p_left,m_right     p_up,m_right     p_right,m_right          
+                    3   p_left,m_down       p_up,m_down     .                    p_down,m_down
+                    4   p_left,m_stay       p_up,m_stay     .                                    p_stay,m_stay
 
         so if p_sHat[2,1] = 1/25, this means probability that player moved up and minotaur moved right is 1/25          
         '''
-        dist = sqrt( (m[0] - p[0])**2 + (m[1] - p[1])**2 ) 
+        # Container for storing forbidden actions for player: 1 means forbidden, free otherwise
+        forbidden_actions = np.zeros((self.n_actions_p,), dtype=np.int)
+        
+        dist = sqrt( (self.m[0] - self.p[0])**2 + (self.m[1] - self.p[1])**2 ) 
         
         if dist == 1:   #minotaur is in KILLING ZONE!
-            if p[0] == m[0]:    # their x coordinates align
-                if p[1] - m[1] = 1:
-                    forbidden_actions[2] = 1
+            if self.p[0] == self.m[0]:    # their x coordinates align
+                if self.p[1] - self.m[1] == 1:            #Minotaur is on the LEFT of player
+                    forbidden_actions[0] = 1    #LEFT motion forbidden
+                    forbidden_actions[4] = 1    
+                elif self.p[1] - self.m[1] == -1:         #Minotaur is on the RIGHT of player
+                    forbidden_actions[2] = 1    #RIGHT motion forbidden    
                     forbidden_actions[4] = 1
-                elif
+            if self.p[1] == self.m[1]:    # their y coordinates align
+                if self.p[1] - self.m[1] == 1:            #Minotaur is on TOP of player
+                    forbidden_actions[1] = 1    #TOP action forbidden
+                    forbidden_actions[4] = 1
+                elif self.p[1] - self.m[1] == -1:         #Minotaur is on the BOTTOM of player
+                    forbidden_actions[3] = 1    #BOTTOM action forbidden
+                    forbidden_actions[4] = 1
+
+        forbidden_actions = self.check_wall_constraint(forbidden_actions)
+
+        n_possible_actions = np.count_nonzero(forbidden_actions==0) #number of possible safe actions for player
+
+        probability_parameter = 1.0/(n_possible_actions * self.n_actions_m)  #since Minotaur can always have all actions
+
+        movable_positions = np.argwhere(forbidden_actions == 0)
+
+        for j in range(movable_positions):
+            self.p_sHat[:,movable_positions[j]] = probability_parameter
+
+
+
