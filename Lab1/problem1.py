@@ -13,10 +13,6 @@ class MDP():
         self.GRID_SIZE_X = 6
         self.GRID_SIZE_Y = 5
 
-        # Number of possible actions for player and Minotaur
-        self.n_actions_p = 5
-        self.n_actions_m = 5    #NOTE:THIS CAN BE SET TO 4/5 for part (c for eg.)
-
         self.reward = 0
 
         '''State'''
@@ -25,13 +21,12 @@ class MDP():
         # position of minotaur
         self.m = (4,4)
         # dead state
-        self.dead = 0
+        self.dead = (-100, -100, -100, -100)
         # win state for player
-        self.win = (4,4)
+        self.win = (100, 100, 100, 100)
 
         #number of STATES
-        #self.NUM_STATES = (self.GRID_SIZE_X * self.GRID_SIZE_Y) ^ 2
-        self.NUM_STATES = (self.GRID_SIZE_X * self.GRID_SIZE_Y) ** 2
+        self.NUM_STATES = (self.GRID_SIZE_X * self.GRID_SIZE_Y) ** 2 + 2 # add WIN and DEAD state
 
         '''Actions:
         0:  Left
@@ -39,12 +34,19 @@ class MDP():
         2:  Right
         3:  Down
         4:  Stay
+        5:  move to dead state
+        6:  move to win state
         '''
-        self.actions = [0, 1, 2, 3, 4]
-        self.index_actions = ['left', 'up', 'right', 'down', 'stay']
+        self.actions_p = [0, 1, 2, 3, 4, 5, 6]
+        self.index_actions_p = ['left', 'up', 'right', 'down', 'stay', 'move to dead', 'move to win']
 
-        #self.action_p = 5  # for player //
-        #self.action_m = 5   # for minotaur //
+        self.actions_m = [0, 1, 2, 3, 4]
+        self.index_actions_m = ['left', 'up', 'right', 'down', 'stay']
+
+        # Number of possible actions for player and Minotaur
+        self.n_actions_p = len(self.actions_p)
+        self.n_actions_m = len(self.actions_m)  # NOTE:THIS CAN BE SET TO 4/5 for part (c for eg.)
+
 
         # Container for walls
         self.walls = np.zeros((self.GRID_SIZE_X, self.GRID_SIZE_Y, 4), dtype=np.int)
@@ -155,12 +157,20 @@ class MDP():
                     4   p_left,m_stay       p_up,m_stay     .                                    p_stay,m_stay
         so if p_sHat[2,1] = 1/25, this means probability that player moved up and minotaur moved right is 1/25
         '''
-        #if self.p == self.m:
-        #    return np.zeros((self.n_actions_p,self.n_actions_m))
 
-        # Generate all next possible locations for player and minotaur
-        next_locations_player = [self.find_next_location(self.p, mov) for mov in self.actions]
-        next_locations_minotaur = [self.find_next_location(self.m, mov) for mov in self.actions]
+        if np.all((self.p, self.w) == self.dead):  #alredy in the dead state, stay there
+            self.p_sHat = np.zeros((self.n_actions_p, self.n_actions_m))
+            self.p_sHat[4, :] = np.ones(self.psHat.shape[1])
+            return
+
+        if np.all(self.p == self.m):   #if player and minotaur are in the same position, then we move to DEAD state
+             self.p_sHat = np.zeros((self.n_actions_p,self.n_actions_m))
+             self.p_sHat[4,:] = np.ones(self.psHat.shape[1])
+             return
+
+        # Generate all next possible locations for player and minotaur -- save the player's movement too!
+        next_locations_player = [(self.find_next_location(self.p, mov), mov) for mov in (self.actions_p - [4,5])]  #dont take into account dead and win
+        next_locations_minotaur = [self.find_next_location(self.m, mov)  for mov in self.actions_m]
 
         # Generate all next states when all actions are applied to current state
         all_next_states = [pair for pair in itertools.product(next_locations_player, next_locations_minotaur)]
@@ -168,32 +178,31 @@ class MDP():
         # Container for storing forbidden actions for player: 1 means forbidden, free otherwise
         forbidden_actions_player = np.zeros((self.n_actions_p), dtype=np.int)
 
-        for next_p, next_m in all_next_states:
+        for next_p_tuple, next_m in all_next_states:
+
+            next_p = next_p_tuple[0]  #location
+            p_mov = next_p_tuple[1]   #movement leading to that location
+
 
             dist = sqrt( (next_m[0] - next_p[0])**2 + (next_m[1] - next_p[1])**2 )
 
             forbidden_actions_player = self.check_wall_constraint(forbidden_actions_player, next_p)
-            if dist == 0:
-                forbidden_actions_player = np.ones((self.n_actions_p), dtype=np.int)
-                self.p_sHat = np.zeros((self.n_actions_p,self.n_actions_m))
 
-            elif dist == 1:   #minotaur is in KILLING ZONE!
+            if dist <= 1:   #minotaur is in KILLING ZONE! very close positions or the same position
                 if next_p[0] == next_m[0]:    # their x coordinates align
                     if next_p[1] - next_m[1] == 1:            #Minotaur is going to be on the LEFT of player
-                        forbidden_actions_player[0] = 1    #LEFT motion for player forbidden
-                        forbidden_actions_player[4] = 1
+                        forbidden_actions_player[p_mov] = 1
                     elif next_p[1] - next_m[1] == -1:         #Minotaur is going to be  on the RIGHT of player
-                        forbidden_actions_player[2] = 1    #RIGHT motion for player forbidden
-                        forbidden_actions_player[4] = 1
+                        forbidden_actions_player[p_mov] = 1
+                    elif next_p[1] - next_m[1] == 0:          #Minotaur and player in the same position
+                        forbidden_actions_player[p_mov] = 1                               #
+                        print('killing position')
                 if next_p[1] == next_m[1]:    # their y coordinates align
                     if next_p[1] - next_m[1] == 1:            #Minotaur is going to be  on TOP of player
-                        forbidden_actions_player[1] = 1    #TOP action for player forbidden
-                        forbidden_actions_player[4] = 1
+                        forbidden_actions_player[p_mov] = 1
                     elif next_p[1] - next_m[1] == -1:         #Minotaur is going to be  on the BOTTOM of player
-                        forbidden_actions_player[3] = 1    #BOTTOM action for player forbidden
-                        forbidden_actions_player[4] = 1
+                        forbidden_actions_player[p_mov] = 1
 
-        
         n_possible_actions_player = np.count_nonzero(forbidden_actions_player == 0) #number of possible safe actions for player
 
         probability_parameter = 1.0/(n_possible_actions_player * self.n_actions_m)  #since Minotaur can always have all actions
@@ -229,20 +238,23 @@ class MDP():
         #Generate all possible states (player_location, minotaur_location)
         all_positions = [positions_pair for positions_pair in itertools.product(range(self.GRID_SIZE_X), range(self.GRID_SIZE_Y))]  #all positions for player/minotaur
         all_states = [states_pair for states_pair in itertools.product(all_positions, all_positions)]
+        all_states.append(self.win)
+        all_states.append(self.dead)
+
+        #assign an index to every state - useful for accessing the state value of other states
+        states_mapping = dict(zip(list(all_states), range(0,self.NUM_STATES)))
         
         # Generate all possible actions in pairs (player action, minotaur action)
         all_actions = [pair for pair in itertools.product(self.actions, self.actions)]
 
-        ## Change all_positions and all_states to numpy array 
-        all_positions = np.array(all_positions)
+        ## Change all_positions and all_states to numpy array
         all_states = (np.array(all_states)).reshape((self.NUM_STATES,4)) 
         all_actions = np.array(all_actions)
        
         state_values = np.zeros((self.NUM_STATES, self.T))   #keep the best state values computed in each iteration
         policy = np.zeros((self.NUM_STATES, self.T))   #store the best sequence of actions for the player
 
-        for t in range(self.T-1, -1, -1):
-            delta = 0.0
+        for t in range(self.T, -1, -1):
             for i in range(self.NUM_STATES):
 
                 #change current state
@@ -260,31 +272,29 @@ class MDP():
                     next_state = self.update_state((action_p, action_m))
 
                     #find reward for current state: if state is WIN then reward is 1, 0 otherwise
-                    if self.p == self.win:
+                    if np.all(self.p == self.win):
                         self.reward = 1
 
                     #define the probability of performing that action
                     transition_prob = self.p_sHat[action_p, action_m]
 
-                    #compute expected_reward for the pair (state, action)
-                    temp1 = (all_states==next_state).all(axis=1)
-                    temp2 = np.argwhere(temp1==True)
-
-                    expected_reward = transition_prob * (self.reward + state_values[next_state, t+1 ])   #gamma?
-                    action_returns.append(expected_reward)
+                    if next_state in states_mapping.keys():   #next state belongs to our state space
+                        next_state_indx = states_mapping[next_state]
+                        expected_reward = transition_prob * (self.reward + state_values[next_state_indx, t+1 ])
+                        action_returns.append(expected_reward)
 
                 # greedy improvement policy: keep maximum expected reward
                 new_state_value = np.max(action_returns)
-                delta += np.abs(state_values[i, t] - new_state_value)
+                #delta += np.abs(state_values[i, t] - new_state_value)
 
                 # update state value
-                state_value[i] = new_state_value
+                state_values[i] = new_state_value
 
                 # keep player's action that lead to the best state value
                 policy[i] = all_actions[np.argmax(np.round(action_returns, 5))][0]
 
-            if delta < 1e-9:
-                break
+            #if delta < 1e-9:
+            #    break
 
         #transform action index to strings
         policy_player_final = [self.index_actions[action_indx] for action_indx in policy]
