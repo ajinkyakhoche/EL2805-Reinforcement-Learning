@@ -158,15 +158,16 @@ class MDP():
         so if p_sHat[2,1] = 1/25, this means probability that player moved up and minotaur moved right is 1/25
         '''
 
-        if np.all((self.p, self.w) == self.dead):  #alredy in the dead state, stay there
+        if self.dead:  #alredy in the dead state, stay there
             self.p_sHat = np.zeros((self.n_actions_p, self.n_actions_m))
-            self.p_sHat[4, :] = np.ones(self.psHat.shape[1])
+            self.p_sHat[5, :] = 0.2 * np.ones(self.p_sHat.shape[1])
             return
 
-        if np.all(self.p == self.m):   #if player and minotaur are in the same position, then we move to DEAD state
-             self.p_sHat = np.zeros((self.n_actions_p,self.n_actions_m))
-             self.p_sHat[4,:] = np.ones(self.psHat.shape[1])
-             return
+        if np.all(self.p == self.win):
+            self.p_sHat = np.zeros((self.n_actions_p, self.n_actions_m))
+            self.p_sHat[6, :] = 0.2 * np.ones(self.psHat.shape[1])
+            return
+
 
         # Generate all next possible locations for player and minotaur -- save the player's movement too!
         next_locations_player = [(self.find_next_location(self.p, mov), mov) for mov in (self.actions_p - [4,5])]  #dont take into account dead and win
@@ -196,7 +197,7 @@ class MDP():
                         forbidden_actions_player[p_mov] = 1
                     elif next_p[1] - next_m[1] == 0:          #Minotaur and player in the same position
                         forbidden_actions_player[p_mov] = 1                               #
-                        print('killing position')
+                        print('killing position is next')
                 if next_p[1] == next_m[1]:    # their y coordinates align
                     if next_p[1] - next_m[1] == 1:            #Minotaur is going to be  on TOP of player
                         forbidden_actions_player[p_mov] = 1
@@ -245,10 +246,10 @@ class MDP():
         states_mapping = dict(zip(list(all_states), range(0,self.NUM_STATES)))
         
         # Generate all possible actions in pairs (player action, minotaur action)
-        all_actions = [pair for pair in itertools.product(self.actions, self.actions)]
+        all_actions = [pair for pair in itertools.product(self.actions_p, self.actions_m)]
 
         ## Change all_positions and all_states to numpy array
-        all_states = (np.array(all_states)).reshape((self.NUM_STATES,4)) 
+        all_states = (np.array(all_states))#.reshape((self.NUM_STATES,4))
         all_actions = np.array(all_actions)
        
         state_values = np.zeros((self.NUM_STATES, self.T))   #keep the best state values computed in each iteration
@@ -258,8 +259,8 @@ class MDP():
             for i in range(self.NUM_STATES):
 
                 #change current state
-                self.p = all_states[i,0:2]
-                self.m = all_states[i,2:4]
+                self.p = all_states[i][0]  #[i,0:2]
+                self.m = all_states[i][1]        #[i,2:4]
 
                 #generate state transition matrix self.p_sHat for state
                 self.calc_transition_prob()
@@ -282,6 +283,10 @@ class MDP():
                         next_state_indx = states_mapping[next_state]
                         expected_reward = transition_prob * (self.reward + state_values[next_state_indx, t+1 ])
                         action_returns.append(expected_reward)
+                    else:
+                        expected_reward = 0
+                        action_returns.append(expected_reward)
+
 
                 # greedy improvement policy: keep maximum expected reward
                 new_state_value = np.max(action_returns)
