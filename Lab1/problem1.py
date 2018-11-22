@@ -21,9 +21,9 @@ class MDP():
         # position of minotaur
         self.m = (4,4)
         # dead state
-        self.dead = (-100, -100, -100, -100)
+        self.dead = ((-100, -100), (-100, -100))
         # win state for player
-        self.win = (100, 100, 100, 100)
+        self.win = ((100, 100), (100, 100))
 
         #number of STATES
         self.NUM_STATES = (self.GRID_SIZE_X * self.GRID_SIZE_Y) ** 2 + 2 # add WIN and DEAD state
@@ -128,15 +128,15 @@ class MDP():
         return next_location
 
 
-    def check_wall_constraint(self, forbidden_actions, next_p):
+    def check_wall_constraint(self, forbidden_actions):
         #NOTE: walls[0,-1] actually means walls[0,5]!!!
-        if self.walls[next_p[0],next_p[1],0] == 1:      #player's LEFT side is blocked
+        if self.walls[self.p[0],self.p[1],0] == 1:      #player's LEFT side is blocked
             forbidden_actions[0] = 1
-        if self.walls[next_p[0],next_p[1],1] == 1:      #player's TOP side is blocked
+        if self.walls[self.p[0],self.p[1],1] == 1:      #player's TOP side is blocked
             forbidden_actions[1] = 1
-        if self.walls[next_p[0],next_p[1],2] == 1:      #player's RIGHT side is blocked
+        if self.walls[self.p[0],self.p[1],2] == 1:      #player's RIGHT side is blocked
             forbidden_actions[2] = 1
-        if self.walls[next_p[0],next_p[1],3] == 1:      #player's BOTTOM side is blocked
+        if self.walls[self.p[0],self.p[1],3] == 1:      #player's BOTTOM side is blocked
             forbidden_actions[3] = 1
 
         return forbidden_actions
@@ -158,26 +158,37 @@ class MDP():
         so if p_sHat[2,1] = 1/25, this means probability that player moved up and minotaur moved right is 1/25
         '''
 
-        if self.dead:  #alredy in the dead state, stay there
+        #dead variable is in tuple form, transform p, m to tuple too
+        if np.all(((self.p[0],self.p[1]), (self.m[0], self.m[1])) == self.dead):  #alredy in the dead state, stay there
             self.p_sHat = np.zeros((self.n_actions_p, self.n_actions_m))
-            self.p_sHat[5, :] = 0.2 * np.ones(self.p_sHat.shape[1])
+            self.p_sHat[5, :] = 0.2 * np.ones(self.p_sHat.shape[1])   #player does a jump to DEAD state, indepentently of minotaur
             return
 
-        if np.all(self.p == self.win):
+        #win variable is in tuple form, transform p, m to tuple too
+        if np.all(((self.p[0],self.p[1]), (self.m[0], self.m[1])) == self.win):   #player arrived in the winning position, stayed there
             self.p_sHat = np.zeros((self.n_actions_p, self.n_actions_m))
-            self.p_sHat[6, :] = 0.2 * np.ones(self.psHat.shape[1])
+            self.p_sHat[6, :] = 0.2 * np.ones(self.p_sHat.shape[1])      #player does a jump to WIN state, indepentently of minotaur
+            return
+
+        if np.all(self.p == self.m):    #player is being killed, moving directly to dead state
+            self.p_sHat = np.zeros((self.n_actions_p, self.n_actions_m))
+            self.p_sHat[5, :] = 0.2 * np.ones(self.p_sHat.shape[1])      #player does a jump to DEAD state, indepentently of minotaur
             return
 
 
+        #### CHECK only MOVABLE ACTIONS!
         # Generate all next possible locations for player and minotaur -- save the player's movement too!
-        next_locations_player = [(self.find_next_location(self.p, mov), mov) for mov in (self.actions_p - [4,5])]  #dont take into account dead and win
+        next_locations_player = [(self.find_next_location(self.p, mov), mov) for mov in (self.actions_p[0:4])]  #dont take into account dead and win state
         next_locations_minotaur = [self.find_next_location(self.m, mov)  for mov in self.actions_m]
 
         # Generate all next states when all actions are applied to current state
         all_next_states = [pair for pair in itertools.product(next_locations_player, next_locations_minotaur)]
 
         # Container for storing forbidden actions for player: 1 means forbidden, free otherwise
-        forbidden_actions_player = np.zeros((self.n_actions_p), dtype=np.int)
+        forbidden_actions_player = np.zeros((self.n_actions_p-2), dtype=np.int)   #dont take into account dead and win state
+
+        # check wall restrictions from current state
+        forbidden_actions_player = self.check_wall_constraint(forbidden_actions_player)
 
         for next_p_tuple, next_m in all_next_states:
 
@@ -187,8 +198,8 @@ class MDP():
 
             dist = sqrt( (next_m[0] - next_p[0])**2 + (next_m[1] - next_p[1])**2 )
 
-            forbidden_actions_player = self.check_wall_constraint(forbidden_actions_player, next_p)
 
+            # cbeck killing-zone restrictions from the next state
             if dist <= 1:   #minotaur is in KILLING ZONE! very close positions or the same position
                 if next_p[0] == next_m[0]:    # their x coordinates align
                     if next_p[1] - next_m[1] == 1:            #Minotaur is going to be on the LEFT of player
@@ -210,7 +221,7 @@ class MDP():
 
         acceptable_actions_player = list(np.argwhere(forbidden_actions_player == 0))  #acceptable actions for the player
 
-        acceptable_actions = [pair for pair in itertools.product(acceptable_actions_player, self.actions)]  #acceptable actions for (player, minotaur)
+        acceptable_actions = [pair for pair in itertools.product(acceptable_actions_player, self.actions_m)]  #acceptable actions for (player, minotaur)
 
 
         #update transition probability matrix for current state
@@ -239,8 +250,8 @@ class MDP():
         #Generate all possible states (player_location, minotaur_location)
         all_positions = [positions_pair for positions_pair in itertools.product(range(self.GRID_SIZE_X), range(self.GRID_SIZE_Y))]  #all positions for player/minotaur
         all_states = [states_pair for states_pair in itertools.product(all_positions, all_positions)]
-        all_states.append(self.win)
-        all_states.append(self.dead)
+        all_states.append(self.dead)   #append dead state
+        all_states.append(self.win)       #win state
 
         #assign an index to every state - useful for accessing the state value of other states
         states_mapping = dict(zip(list(all_states), range(0,self.NUM_STATES)))
@@ -249,18 +260,23 @@ class MDP():
         all_actions = [pair for pair in itertools.product(self.actions_p, self.actions_m)]
 
         ## Change all_positions and all_states to numpy array
-        all_states = (np.array(all_states))#.reshape((self.NUM_STATES,4))
+        all_states = (np.array(all_states)).reshape((self.NUM_STATES,4))
         all_actions = np.array(all_actions)
        
         state_values = np.zeros((self.NUM_STATES, self.T))   #keep the best state values computed in each iteration
         policy = np.zeros((self.NUM_STATES, self.T))   #store the best sequence of actions for the player
 
-        for t in range(self.T, -1, -1):
+        #base case of dynamic programming
+        # WIN state
+        win_state_indx = states_mapping[self.win]
+        #state_values[win_state_indx , -1] =
+
+        for t in range(self.T-1, -1, -1):
             for i in range(self.NUM_STATES):
 
                 #change current state
-                self.p = all_states[i][0]  #[i,0:2]
-                self.m = all_states[i][1]        #[i,2:4]
+                self.p = all_states[i,0:2]
+                self.m = all_states[i,2:4]
 
                 #generate state transition matrix self.p_sHat for state
                 self.calc_transition_prob()
@@ -281,12 +297,11 @@ class MDP():
 
                     if next_state in states_mapping.keys():   #next state belongs to our state space
                         next_state_indx = states_mapping[next_state]
-                        expected_reward = transition_prob * (self.reward + state_values[next_state_indx, t+1 ])
+                        expected_reward = 0 #transition_prob * (self.reward + state_values[next_state_indx, t+1 ])
                         action_returns.append(expected_reward)
                     else:
                         expected_reward = 0
                         action_returns.append(expected_reward)
-
 
                 # greedy improvement policy: keep maximum expected reward
                 new_state_value = np.max(action_returns)
