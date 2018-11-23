@@ -199,8 +199,23 @@ class MDP():
             dist = sqrt( (next_m[0] - next_p[0])**2 + (next_m[1] - next_p[1])**2 )
 
 
-            # cbeck killing-zone restrictions from the next state
+            cbeck killing-zone restrictions from the next state
             if dist <= 1:   #minotaur is in KILLING ZONE! very close positions or the same position
+                if next_p[0] == next_m[0]:    # their x coordinates align
+                    if next_p[1] - next_m[1] == 1:            #Minotaur is going to be on the LEFT of player
+                        forbidden_actions_player[p_mov] = 1
+                    elif next_p[1] - next_m[1] == -1:         #Minotaur is going to be  on the RIGHT of player
+                        forbidden_actions_player[p_mov] = 1
+                    elif next_p[1] - next_m[1] == 0:          #Minotaur and player in the same position
+                        forbidden_actions_player[p_mov] = 1                               #
+                        print('killing position is next')
+                if next_p[1] == next_m[1]:    # their y coordinates align
+                    if next_p[1] - next_m[1] == 1:            #Minotaur is going to be  on TOP of player
+                        forbidden_actions_player[p_mov] = 1
+                    elif next_p[1] - next_m[1] == -1:         #Minotaur is going to be  on the BOTTOM of player
+                        forbidden_actions_player[p_mov] = 1
+
+                
                 if next_p[0] == next_m[0]:    # their x coordinates align
                     if next_p[1] - next_m[1] == 1:            #Minotaur is going to be on the LEFT of player
                         forbidden_actions_player[p_mov] = 1
