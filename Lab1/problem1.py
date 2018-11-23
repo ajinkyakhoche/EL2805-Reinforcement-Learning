@@ -10,8 +10,8 @@ class MDP():
         self.T =15
 
         #Origin at Top left
-        self.GRID_SIZE_X = 6
-        self.GRID_SIZE_Y = 5
+        self.GRID_SIZE_COL = 6
+        self.GRID_SIZE_ROW = 5
 
         self.reward = 0
 
@@ -26,7 +26,7 @@ class MDP():
         self.win = ((100, 100), (100, 100))
 
         #number of STATES
-        self.NUM_STATES = (self.GRID_SIZE_X * self.GRID_SIZE_Y) ** 2 + 2 # add WIN and DEAD state
+        self.NUM_STATES = (self.GRID_SIZE_COL * self.GRID_SIZE_ROW) ** 2 + 2 # add WIN and DEAD state
 
         '''Actions:
         0:  Left
@@ -51,7 +51,7 @@ class MDP():
         self.acceptable_actions_player = []
 
         # Container for walls
-        self.walls = np.zeros((self.GRID_SIZE_X, self.GRID_SIZE_Y, 4), dtype=np.int)
+        self.walls = np.zeros((self.GRID_SIZE_ROW, self.GRID_SIZE_COL, 4), dtype=np.int)
 
         # State transition matrix: each cell (x,y) contains the probability of performing the action (x,y)
         self.p_sHat = np.zeros((self.n_actions_p,self.n_actions_m))
@@ -74,37 +74,70 @@ class MDP():
         or cell 0,0:    Up and Right sides are blocked by walls
         '''
         # define corners
+        # self.walls[0,0] = [1,1,0,0]                                     # TOP LEFT
+        # self.walls[self.GRID_SIZE_COL-1,self.GRID_SIZE_ROW-1] = [0,0,1,1]   # BOTTOM RIGHT
+        # self.walls[self.GRID_SIZE_COL-1, 0] = [0,1,1,0]
+        # self.walls[0,self.GRID_SIZE_ROW-1] = [1,0,0,1]
+
+        # # cells between TOP LEFT and TOP RIGHT
+        # self.walls[1:self.GRID_SIZE_COL-1,0] = [0,1,0,0]
+        # # cells between BOTTOM LEFT and BOTTOM RIGHT
+        # self.walls[1:self.GRID_SIZE_COL-1,self.GRID_SIZE_ROW-1] = [0,0,0,1]
+        # # cells between TOP LEFT and BOTTOM LEFT
+        # self.walls[0,1:self.GRID_SIZE_ROW-1] = [1,0,0,0]
+        # # cells between TOP RIGHT and BOTTOM RIGHT
+        # self.walls[self.GRID_SIZE_COL-1,1:self.GRID_SIZE_ROW-1] = [0,0,1,0]
+
+        # '''Custom wall cells: depend on map
+        #     SET MANUALLY!!
+        # '''
+        # self.walls[1,:0:3, 2] = 1
+        # self.walls[2,:0:3, 0] = 1
+
+        # self.walls[1:5,self.GRID_SIZE_ROW-1,1] = 1
+        # self.walls[1:5,self.GRID_SIZE_ROW-1,3] = 1
+
+        # self.walls[3,self.GRID_SIZE_ROW-1,2] = 1
+        # self.walls[4,self.GRID_SIZE_ROW-1,0] = 1
+
+        # self.walls[3,1:3,2] = 1
+        # self.walls[4,1:3,0] = 1
+
+        # self.walls[4:self.GRID_SIZE_COL, 1,3] = 1
+        # self.walls[4:self.GRID_SIZE_COL, 2,1] = 1
+
         self.walls[0,0] = [1,1,0,0]                                     # TOP LEFT
-        self.walls[self.GRID_SIZE_X-1,self.GRID_SIZE_Y-1] = [0,0,1,1]   # BOTTOM RIGHT
-        self.walls[self.GRID_SIZE_X-1, 0] = [0,1,1,0]
-        self.walls[0,self.GRID_SIZE_Y-1] = [1,0,0,1]
+        self.walls[self.GRID_SIZE_ROW-1,self.GRID_SIZE_COL-1] = [0,0,1,1]   # BOTTOM RIGHT
+        self.walls[self.GRID_SIZE_ROW-1, 0] = [1,0,0,1]
+        self.walls[0,self.GRID_SIZE_COL-1] = [0,1,1,0]
 
         # cells between TOP LEFT and TOP RIGHT
-        self.walls[1:self.GRID_SIZE_X-1,0] = [0,1,0,0]
+        self.walls[0, 1:self.GRID_SIZE_COL-1] = [0,1,0,0]
         # cells between BOTTOM LEFT and BOTTOM RIGHT
-        self.walls[1:self.GRID_SIZE_X-1,self.GRID_SIZE_Y-1] = [0,0,0,1]
+        self.walls[self.GRID_SIZE_ROW-1, 1:self.GRID_SIZE_COL-1,] = [0,0,0,1]
         # cells between TOP LEFT and BOTTOM LEFT
-        self.walls[0,1:self.GRID_SIZE_Y-1] = [1,0,0,0]
+        self.walls[1:self.GRID_SIZE_ROW-1,0] = [1,0,0,0]
         # cells between TOP RIGHT and BOTTOM RIGHT
-        self.walls[self.GRID_SIZE_X-1,1:self.GRID_SIZE_Y-2] = [0,0,1,0]
+        self.walls[1:self.GRID_SIZE_ROW-1, self.GRID_SIZE_COL-1] = [0,0,1,0]
 
         '''Custom wall cells: depend on map
             SET MANUALLY!!
         '''
-        self.walls[1,:0:3, 2] = 1
-        self.walls[2,:0:3, 0] = 1
+        self.walls[0:3, 1, 2] = 1
+        self.walls[0:3, 2, 0] = 1
 
-        self.walls[1:5,self.GRID_SIZE_Y-1,1] = 1
-        self.walls[1:5,self.GRID_SIZE_Y-2,3] = 1
+        self.walls[self.GRID_SIZE_ROW-1, 1:5,1] = 1
+        self.walls[self.GRID_SIZE_ROW-2,1:5,3] = 1
 
-        self.walls[3,self.GRID_SIZE_Y-1,2] = 1
-        self.walls[4,self.GRID_SIZE_Y-1,0] = 1
+        self.walls[self.GRID_SIZE_ROW-1,3,2] = 1
+        self.walls[self.GRID_SIZE_ROW-1,4,0] = 1
 
-        self.walls[3,1:3,2] = 1
-        self.walls[4,1:3,0] = 1
+        self.walls[1:3, 3,2] = 1
+        self.walls[1:3, 4,0] = 1
 
-        self.walls[4:self.GRID_SIZE_X, 1,3] = 1
-        self.walls[4:self.GRID_SIZE_X, 2,1] = 1
+        self.walls[1,4:self.GRID_SIZE_COL,3] = 1
+        self.walls[2, 4:self.GRID_SIZE_COL,1] = 1
+
 
         #self.walls = np.transpose(self.walls, (1,0,2))
 
@@ -115,37 +148,37 @@ class MDP():
         x = current_location[0]
         y = current_location[1]
 
-        # if action == 0: #LEFT
-        #     next_location = (x,y-1)
-        # elif action == 1: #UP
-        #     next_location = (x-1,y)
-        # elif action == 2: #RIGHT
-        #     next_location = (x,y+1)
-        # elif action == 3:  #DOWN
-        #     next_location = (x+1,y)
-        # else: #STAY
-        #     next_location = (x,y)
-
-        #if agent == 'player':
         if action == 0: #LEFT
-            next_location = (x-1,y)
-        elif action == 1: #UP
             next_location = (x,y-1)
+        elif action == 1: #UP
+            next_location = (x-1,y)
         elif action == 2: #RIGHT
-            next_location = (x+1,y)
-        elif action == 3:  #DOWN
             next_location = (x,y+1)
+        elif action == 3:  #DOWN
+            next_location = (x+1,y)
         else: #STAY
             next_location = (x,y)
+
+        # #if agent == 'player':
+        # if action == 0: #LEFT
+        #     next_location = (x-1,y)
+        # elif action == 1: #UP
+        #     next_location = (x,y-1)
+        # elif action == 2: #RIGHT
+        #     next_location = (x+1,y)
+        # elif action == 3:  #DOWN
+        #     next_location = (x,y+1)
+        # else: #STAY
+        #     next_location = (x,y)
     
         if agent == 'minotaur':
-            if next_location[0] < 0:    # it moved in -ve along X axis
-                next_location = (self.GRID_SIZE_X-1, next_location[1])
-            if next_location[0] >= self.GRID_SIZE_X:
+            if next_location[0] < 0:      # it moved in -ve along ROW axis
+                next_location = (self.GRID_SIZE_ROW-1, next_location[1])
+            if next_location[0] >= self.GRID_SIZE_ROW:  #It exceeded the Max ROW    
                 next_location = (0, next_location[1])
-            if next_location[1] < 0:   # agent moved -ve in Y axis
-                next_location = (next_location[0],self.GRID_SIZE_Y-1)
-            if next_location[1] >= self.GRID_SIZE_Y:
+            if next_location[1] < 0:   # agent moved -ve in COL axis
+                next_location = (next_location[0],self.GRID_SIZE_COL-1)
+            if next_location[1] >= self.GRID_SIZE_COL:  #It exceeded Max COL
                 next_location = (next_location[0],0)
 
             #print('reached here')
@@ -194,6 +227,15 @@ class MDP():
             self.p_sHat = np.zeros((self.n_actions_p, self.n_actions_m))
             self.p_sHat[6, :] = 0.2 * np.ones(self.p_sHat.shape[1])      #player does a jump to WIN state, indepentently of minotaur
             return
+
+        #NOTE: EVI: include this case!!
+        #win variable is in tuple form, transform p, m to tuple too
+        #if np.all(((self.p[0],self.p[1]),  == self.win):   #player arrived in the winning position, stayed there
+        #    self.p_sHat = np.zeros((self.n_actions_p, self.n_actions_m))
+        #    self.p_sHat[6, :] = 0.2 * np.ones(self.p_sHat.shape[1])      #player does a jump to WIN state, indepentently of minotaur
+        #    return
+        
+
 
         if np.all(self.p == self.m):    #player is being killed, moving directly to dead state
             self.p_sHat = np.zeros((self.n_actions_p, self.n_actions_m))
@@ -306,7 +348,7 @@ class MDP():
     def value_iteration(self):
 
         #Generate all possible states (player_location, minotaur_location)
-        all_positions = [positions_pair for positions_pair in itertools.product(range(self.GRID_SIZE_X), range(self.GRID_SIZE_Y))]  #all positions for player/minotaur
+        all_positions = [positions_pair for positions_pair in itertools.product(range(self.GRID_SIZE_ROW), range(self.GRID_SIZE_COL))]  #all positions for player/minotaur
         all_states = [states_pair for states_pair in itertools.product(all_positions, all_positions)]
         all_states.append(self.dead)   #append dead state
         all_states.append(self.win)       #win state
