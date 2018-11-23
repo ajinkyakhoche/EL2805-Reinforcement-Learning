@@ -216,32 +216,32 @@ class MDP():
         so if p_sHat[2,1] = 1/25, this means probability that player moved up and minotaur moved right is 1/25
         '''
 
-        #dead variable is in tuple form, transform p, m to tuple too
-        if np.all(((self.p[0],self.p[1]), (self.m[0], self.m[1])) == self.dead):  #alredy in the dead state, stay there
+        # dead variable is in tuple form, transform p, m to tuple too
+        # alredy in the dead state, stay there
+        if np.all(((self.p[0],self.p[1]), (self.m[0], self.m[1])) == self.dead):
             self.p_sHat = np.zeros((self.n_actions_p, self.n_actions_m))
             self.p_sHat[5, :] = 0.2 * np.ones(self.p_sHat.shape[1])   #player does a jump to DEAD state, indepentently of minotaur
             return
 
-        #win variable is in tuple form, transform p, m to tuple too
-        if np.all(((self.p[0],self.p[1]), (self.m[0], self.m[1])) == self.win):   #player arrived in the winning position, stayed there
-            self.p_sHat = np.zeros((self.n_actions_p, self.n_actions_m))
-            self.p_sHat[6, :] = 0.2 * np.ones(self.p_sHat.shape[1])      #player does a jump to WIN state, indepentently of minotaur
-            return
 
-        #NOTE: EVI: include this case!!
-        #win variable is in tuple form, transform p, m to tuple too
-        #if np.all(((self.p[0],self.p[1]),  == self.win):   #player arrived in the winning position, stayed there
-        #    self.p_sHat = np.zeros((self.n_actions_p, self.n_actions_m))
-        #    self.p_sHat[6, :] = 0.2 * np.ones(self.p_sHat.shape[1])      #player does a jump to WIN state, indepentently of minotaur
-        #    return
-        
-
-
-        if np.all(self.p == self.m):    #player is being killed, moving directly to dead state
+        # player is being killed, moving directly to dead state
+        if np.all(self.p == self.m):
             self.p_sHat = np.zeros((self.n_actions_p, self.n_actions_m))
             self.p_sHat[5, :] = 0.2 * np.ones(self.p_sHat.shape[1])      #player does a jump to DEAD state, indepentently of minotaur
             return
 
+        # win variable is in tuple form, transform p, m to tuple too
+        # player arrived in the winning position, stayed there
+        if np.all(((self.p[0],self.p[1]), (self.m[0], self.m[1])) == self.win):
+            self.p_sHat = np.zeros((self.n_actions_p, self.n_actions_m))
+            self.p_sHat[6, :] = 0.2 * np.ones(self.p_sHat.shape[1])      #player does a jump to WIN state, indepentently of minotaur
+            return
+
+        # when in state (4,4,_,_) move directly to WIN state
+        if np.all((self.p[0],self.p[1]) == (4,4)):
+            self.p_sHat = np.zeros((self.n_actions_p, self.n_actions_m))
+            self.p_sHat[6, :] = 0.2 * np.ones(self.p_sHat.shape[1])      #player does a jump to WIN state, indepentently of minotaur
+            return
 
         #### CHECK only MOVABLE ACTIONS!
         # Generate all next possible locations for player and minotaur -- save the player's movement too!
@@ -418,25 +418,31 @@ class MDP():
                         #    expected_reward = 0
                          #   action_returns.append(expected_reward)
 
-                        # greedy improvement policy: keep maximum expected reward
-                        new_state_value = np.max(action_returns)
-                        #delta += np.abs(state_values[i, t] - new_state_value)
+                    # greedy improvement policy: keep maximum expected reward
+                    new_state_value = np.max(action_returns)
+                    #delta += np.abs(state_values[i, t] - new_state_value)
 
-                        # update state value
-                        state_values[i, t] = new_state_value
+                    # update state value
+                    state_values[i, t] = new_state_value
 
-                        # keep player's action that lead to the best state value
-                        policy[i, t] = all_acceptable_actions[np.argmax(np.round(action_returns, 5))][0]
+                    # keep player's action that lead to the best state value
+                    policy[i, t] = all_acceptable_actions[np.argmax(np.round(action_returns, 5))][0]
+
+                    print(state_values[i, t]) #, 'action:', self.index_actions_p[policy[i, t]])
 
             #if delta < 1e-9:
             #    break
 
-        #transform action index to strings
-        policy_player_final = [self.index_actions_p[action_indx] for action_indx in policy]
+        #forward iteration of policy starting from state (0,0,4,4)
+        # to be checked!
+       ##policy_forward = np.zeros(self.T)
+       #current_state = ((0,0),(4,4))
+       #for t in range(0, self.T):
+       #    current_state_idx = states_mapping[current_state]
+       #    policy_forward[t] = policy[current_state_idx,t]
 
-        print(policy_player_final)
-
-
+       #    next_state = self.update_state(current_state)
+       #    current_state = next_state
 
 def test():
 
