@@ -112,7 +112,6 @@ class MDP():
         x = current_location[0]
         y = current_location[1]
 
-        next_location = (x, y)
         if action == 0: #LEFT
             next_location = (x,y-1)
         elif action == 1: #UP
@@ -190,6 +189,7 @@ class MDP():
         # check wall restrictions from current state
         forbidden_actions_player = self.check_wall_constraint(forbidden_actions_player)
 
+        self.p_sHat = np.zeros((self.n_actions_p, self.n_actions_m))   #initialize p_sHat
         for next_p_tuple, next_m in all_next_states:
 
             next_p = next_p_tuple[0]  #location
@@ -204,16 +204,20 @@ class MDP():
                 if next_p[0] == next_m[0]:    # their x coordinates align
                     if next_p[1] - next_m[1] == 1:            #Minotaur is going to be on the LEFT of player
                         forbidden_actions_player[p_mov] = 1
+                        print('minotaur is on the left')
                     elif next_p[1] - next_m[1] == -1:         #Minotaur is going to be  on the RIGHT of player
                         forbidden_actions_player[p_mov] = 1
+                        print('minotaur is on the right')
                     elif next_p[1] - next_m[1] == 0:          #Minotaur and player in the same position
                         forbidden_actions_player[p_mov] = 1                               #
                         print('killing position is next')
                 if next_p[1] == next_m[1]:    # their y coordinates align
                     if next_p[1] - next_m[1] == 1:            #Minotaur is going to be  on TOP of player
                         forbidden_actions_player[p_mov] = 1
+                        print('minotaur is on the top')
                     elif next_p[1] - next_m[1] == -1:         #Minotaur is going to be  on the BOTTOM of player
                         forbidden_actions_player[p_mov] = 1
+                        print('minotaur is on the bottom')
 
                 
                 if next_p[0] == next_m[0]:    # their x coordinates align
@@ -234,15 +238,16 @@ class MDP():
 
         probability_parameter = 1.0/(n_possible_actions_player * self.n_actions_m)  #since Minotaur can always have all actions
 
-        acceptable_actions_player = list(np.argwhere(forbidden_actions_player == 0))  #acceptable actions for the player
+        acceptable_actions_player = list(np.argwhere(forbidden_actions_player == 0)[0])  #acceptable actions for the player
 
-        acceptable_actions = [pair for pair in itertools.product(acceptable_actions_player, self.actions_m)]  #acceptable actions for (player, minotaur)
+        #acceptable_actions = [pair for pair in itertools.product(acceptable_actions_player, self.actions_m)]  #acceptable actions for (player, minotaur)
 
 
         #update transition probability matrix for current state
-        for j in range(len(acceptable_actions)):
-            self.p_sHat[acceptable_actions[j], :] = probability_parameter  #otherwise probability is zero
+        for j in range(len(acceptable_actions_player)):
+            self.p_sHat[acceptable_actions_player[j], :] = probability_parameter  #otherwise probability is zero
 
+        a = acceptable_actions_player[0]
 
     def update_state(self, action):
         '''
@@ -281,12 +286,18 @@ class MDP():
         state_values = np.zeros((self.NUM_STATES, self.T))   #keep the best state values computed in each iteration
         policy = np.zeros((self.NUM_STATES, self.T))   #store the best sequence of actions for the player
 
-        #base case of dynamic programming
+        #####base case of dynamic programming - compute state value at timestep T
         # WIN state
         win_state_indx = states_mapping[self.win]
-        #state_values[win_state_indx , -1] =
+        state_values[win_state_indx , self.T-1] = 1
 
-        for t in range(self.T-1, -1, -1):
+        # states (4,4,_,_) are equivalent to WIN state
+        winning_position_states_indx = [states_mapping[((4,4), minotaur_pos)] for minotaur_pos in all_positions]
+        state_values[winning_position_states_indx, self.T-1] = 1
+
+        # in all other states, terminal reward is zero
+
+        for t in range(self.T-2, -1, -1):
             for i in range(self.NUM_STATES):
 
                 #change current state
@@ -312,7 +323,7 @@ class MDP():
 
                     if next_state in states_mapping.keys():   #next state belongs to our state space
                         next_state_indx = states_mapping[next_state]
-                        expected_reward = 0 #transition_prob * (self.reward + state_values[next_state_indx, t+1 ])
+                        expected_reward = transition_prob * (self.reward + state_values[next_state_indx, t+1 ])
                         action_returns.append(expected_reward)
                     else:
                         expected_reward = 0
