@@ -1,6 +1,7 @@
 import numpy as np
 from math import sqrt
 import itertools
+import matplotlib.pyplot as plt
 
 class MDP():
 
@@ -59,8 +60,23 @@ class MDP():
         '''Member Function'''
         self.define_wall()
 
+        # simulate game (movement between player and minotaur)
+        self.game_grid = []
+        self.define_grid()
+
         # State transition probabilities
         self.value_iteration()
+
+
+    def define_grid(self):
+        self.game_grid.append('###|######')
+        self.game_grid.append('#  |     #')
+        self.game_grid.append('#  |  |__#')
+        self.game_grid.append('#  |  |  #')
+        self.game_grid.append('# ______ #')
+        self.game_grid.append('#     |  #')
+        self.game_grid.append('###|######')
+
 
     def define_wall(self):
         '''
@@ -137,7 +153,6 @@ class MDP():
 
         self.walls[1,4:self.GRID_SIZE_COL,3] = 1
         self.walls[2, 4:self.GRID_SIZE_COL,1] = 1
-
 
         #self.walls = np.transpose(self.walls, (1,0,2))
 
@@ -346,6 +361,13 @@ class MDP():
 
 
     def value_iteration(self):
+        print('###|######')
+        print('#  |     #')
+        print('#  |  |__#')
+        print('#  |  |  #')
+        print('# ______ #')
+        print('#     |  #')
+        print('##########')
 
         #Generate all possible states (player_location, minotaur_location)
         all_positions = [positions_pair for positions_pair in itertools.product(range(self.GRID_SIZE_ROW), range(self.GRID_SIZE_COL))]  #all positions for player/minotaur
@@ -378,7 +400,10 @@ class MDP():
         # in all other states, terminal reward is zero
 
         for t in range(self.T-2, -1, -1):
+            print('----------------------------------')
+            print('Time: ' + str(t+1))
             for i in range(self.NUM_STATES):
+                #print('State: ' + str(all_states[i,:]))
 
                 #change current state
                 self.p = all_states[i,0:2]
@@ -428,7 +453,45 @@ class MDP():
                     # keep player's action that lead to the best state value
                     policy[i, t] = all_acceptable_actions[np.argmax(np.round(action_returns, 5))][0]
 
-                    print(state_values[i, t]) #, 'action:', self.index_actions_p[policy[i, t]])
+                    #print(state_values[i, t]) #, 'action:', self.index_actions_p[policy[i, t]])
+        
+        print('got here')
+
+        '''PLOT RESULTS'''
+        # x axis of plot: Time 't'
+        xx = np.linspace(1,15,15)
+        # y axis of plot: Maximal probability of exiting the maze at time 't'
+        yy = np.amax(state_values,axis=0)
+
+        plt.plot(xx,yy)
+        
+        #forward iteration of policy starting from state (0,0,4,4)
+        #policy_forward = np.zeros(self.T)
+        policy_list = []
+        state_list = []
+        current_state = ((3,4),(4,4))
+        state_list.append(current_state)   
+        self.p = np.array(current_state[0])
+        self.m = np.array(current_state[1])
+
+        for t in range(self.T):
+            # find state mapping for current state
+            current_state_idx = states_mapping[current_state]
+            # find policy for player movement
+            policy_forward = policy[current_state_idx,t]
+
+            # generate random action for minotaur
+            a = np.random.randint(0,5)
+            # find next state
+            next_state = self.update_state((policy_forward,a))
+            state_list.append(next_state)
+            policy_list.append(policy_forward)
+            current_state = next_state
+            self.p = np.array(current_state[0])
+            self.m = np.array(current_state[1])
+
+        print(state_list)
+
 
             #if delta < 1e-9:
             #    break
@@ -443,6 +506,11 @@ class MDP():
 
        #    next_state = self.update_state(current_state)
        #    current_state = next_state
+    
+
+        
+        
+
 
 def test():
 
