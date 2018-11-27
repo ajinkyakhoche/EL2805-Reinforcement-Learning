@@ -63,9 +63,16 @@ class MDP():
         # simulate game (movement between player and minotaur)
         self.game_grid = []
         self.define_grid()
-
+        
         # State transition probabilities
-        self.value_iteration()
+        self.all_states = []
+        self.states_mapping = []
+        self.state_values =[]
+        self.policy = []
+        self.dynamic_programming()
+
+        # Forward iteration to simulate one/several game
+        self.forward_iteration()
 
 
     def define_grid(self):
@@ -307,16 +314,22 @@ class MDP():
         '''
 
         player_action = action[0]
-        next_player_location = self.find_next_location(self.p, player_action, 'player')
-
-        minotaur_action = action[1]
-        next_minotaur_location = self.find_next_location(self.m, minotaur_action, 'minotaur')
+        if player_action == 5:
+            next_player_location = (-100,-100)
+            next_minotaur_location = (-100,-100)
+        elif player_action == 6:
+            next_player_location = (100,100)
+            next_minotaur_location = (100,100)
+        else:
+            next_player_location = self.find_next_location(self.p, player_action, 'player')
+            minotaur_action = action[1]
+            next_minotaur_location = self.find_next_location(self.m, minotaur_action, 'minotaur')
 
 
         return (next_player_location, next_minotaur_location)
 
 
-    def value_iteration(self):
+    def dynamic_programming(self):
         print('###|######')
         print('#  |     #')
         print('#  |  |__#')
@@ -327,33 +340,33 @@ class MDP():
 
         #Generate all possible states (player_location, minotaur_location)
         all_positions = [positions_pair for positions_pair in itertools.product(range(self.GRID_SIZE_ROW), range(self.GRID_SIZE_COL))]  #all positions for player/minotaur
-        all_states = [states_pair for states_pair in itertools.product(all_positions, all_positions)]
-        all_states.append(self.dead)   #append dead state
-        all_states.append(self.win)       #win state
+        self.all_states = [states_pair for states_pair in itertools.product(all_positions, all_positions)]
+        self.all_states.append(self.dead)   #append dead state
+        self.all_states.append(self.win)       #win state
 
         #assign an index to every state - useful for accessing the state value of other states
-        states_mapping = dict(zip(list(all_states), range(0,self.NUM_STATES)))
+        self.states_mapping = dict(zip(list(self.all_states), range(0,self.NUM_STATES)))
         
         # # Generate all possible actions in pairs (player action, minotaur action)
         # all_actions = [pair for pair in itertools.product(self.actions_p, self.actions_m)]
 
-        ## Change all_positions and all_states to numpy array
-        all_states = (np.array(all_states)).reshape((self.NUM_STATES,4))
+        ## Change all_positions and self.all_states to numpy array
+        self.all_states = (np.array(self.all_states)).reshape((self.NUM_STATES,4))
         #all_actions = np.array(all_actions)
        
-        state_values = np.zeros((self.NUM_STATES, self.T))   #keep the best state values computed in each iteration
-        policy = np.zeros((self.NUM_STATES, self.T))   #store the best sequence of actions for the player
+        self.state_values = np.zeros((self.NUM_STATES, self.T))   #keep the best state values computed in each iteration
+        self.policy = np.zeros((self.NUM_STATES, self.T))   #store the best sequence of actions for the player
 
         #####base case of dynamic programming - compute state value at timestep T
         # WIN state
-        win_state_indx = states_mapping[self.win]
-        state_values[win_state_indx , self.T-1] = 1
+        win_state_indx = self.states_mapping[self.win]
+        self.state_values[win_state_indx , self.T-1] = 1
 
         # states (4,4,_,_) are equivalent to WIN state
-        winning_position_states_indx = [states_mapping[((4,4), minotaur_pos)] for minotaur_pos in all_positions]
-        #winning_position_states_indx = states_mapping[((100,100), (100,100))]
-        state_values[winning_position_states_indx, self.T-1] = 1
-        #state_values[states_mapping[((100,100), (100,100))], self.T-1] = 1
+        winning_position_states_indx = [self.states_mapping[((4,4), minotaur_pos)] for minotaur_pos in all_positions]
+        #winning_position_states_indx = self.states_mapping[((100,100), (100,100))]
+        self.state_values[winning_position_states_indx, self.T-1] = 1
+        #self.state_values[self.states_mapping[((100,100), (100,100))], self.T-1] = 1
 
         # in all other states, terminal reward is zero
 
@@ -361,11 +374,11 @@ class MDP():
             print('----------------------------------')
             print('Time: ' + str(t+1))
             for i in range(self.NUM_STATES):
-                #print('State: ' + str(all_states[i,:]))
+                #print('State: ' + str(self.all_states[i,:]))
 
                 #change current state
-                self.p = all_states[i,0:2]
-                self.m = all_states[i,2:4]
+                self.p = self.all_states[i,0:2]
+                self.m = self.all_states[i,2:4]
 
                 #generate state transition matrix self.p_sHat for state
                 self.calc_transition_prob()
@@ -373,12 +386,12 @@ class MDP():
                 #if np.count_nonzero(self.p_sHat[0,4,:]) == 0:
                 # Marginalize probability for action_player = 5 (moving to dead state):
                 if np.sum(self.p_sHat[5,:]) == 1: 
-                    state_values[i,t] = 0
-                    policy[i,t] = 5 #moving dead state
+                    self.state_values[i,t] = 0
+                    self.policy[i,t] = 5 #moving dead state
                 # Marginalize probability for action_player = 6 (moving to winning state):
                 # elif np.sum(self.p_sHat[6,:]) == 1: 
-                #     state_values[i,t] = 0
-                #     policy[i,t] = 6 #moving to winning state
+                #     self.state_values[i,t] = 0
+                #     self.policy[i,t] = 6 #moving to winning state
                 else:
                     # Generate all possible actions in pairs (player action, minotaur action)
                     all_acceptable_actions = [pair for pair in itertools.product(self.acceptable_actions_player, self.actions_m)]
@@ -387,7 +400,7 @@ class MDP():
                     action_returns = []
                     for action_p, action_m in all_acceptable_actions:
 
-                        ######perform one step of policy evaluation
+                        ######perform one step of self.policy evaluation
                         #apply action to state and get next_state
                         next_state = self.update_state((action_p, action_m))
 
@@ -398,75 +411,84 @@ class MDP():
                         #define the probability of performing that action
                         transition_prob = self.p_sHat[action_p, action_m]
 
-                        #if next_state in states_mapping.keys():   #next state belongs to our state space
-                        next_state_indx = states_mapping[next_state]
-                        expected_reward = transition_prob * (self.reward + state_values[next_state_indx, t+1 ])
+                        #if next_state in self.states_mapping.keys():   #next state belongs to our state space
+                        next_state_indx = self.states_mapping[next_state]
+                        expected_reward = transition_prob * (self.reward + self.state_values[next_state_indx, t+1 ])
                         action_returns.append(expected_reward)
                        # else:
                         #    expected_reward = 0
                          #   action_returns.append(expected_reward)
 
-                    # greedy improvement policy: keep maximum expected reward
+                    # greedy improvement self.policy: keep maximum expected reward
                     new_state_value = np.max(action_returns)
-                    #delta += np.abs(state_values[i, t] - new_state_value)
+                    #delta += np.abs(self.state_values[i, t] - new_state_value)
 
                     # update state value
-                    state_values[i, t] = new_state_value
+                    self.state_values[i, t] = new_state_value
 
                     # keep player's action that lead to the best state value
-                    #policy[i, t] = all_acceptable_actions[np.argmax(np.round(action_returns, 5))][0]
-                    policy[i, t] = all_acceptable_actions[np.argmax(action_returns)][0]
+                    #self.policy[i, t] = all_acceptable_actions[np.argmax(np.round(action_returns, 5))][0]
+                    self.policy[i, t] = all_acceptable_actions[np.argmax(action_returns)][0]
 
-                    #print(state_values[i, t]) #, 'action:', self.index_actions_p[policy[i, t]])
+                    #print(self.state_values[i, t]) #, 'action:', self.index_actions_p[self.policy[i, t]])
         
         print('got here')
+
+        self.forward_iteration()
+
+    def forward_iteration(self):
 
         '''PLOT RESULTS'''
         # x axis of plot: Time 't'
         xx = np.linspace(1,15,15)
         # y axis of plot: Maximal probability of exiting the maze at time 't'
-        yy = np.amax(state_values,axis=0)
+        yy = np.amax(self.state_values,axis=0)
 
         plt.plot(xx,yy)
-        
-        #forward iteration of policy starting from state (0,0,4,4)
-        #policy_forward = np.zeros(self.T)
-        policy_list = []
-        state_list = []
-        current_state = ((0,0),(4,4))
-        state_list.append(current_state)   
-        self.p = np.array(current_state[0])
-        self.m = np.array(current_state[1])
 
-        for t in range(self.T-1):
-            # find state mapping for current state
-            current_state_idx = states_mapping[current_state]
-            # find policy for player movement
-            policy_forward = policy[current_state_idx,t]
-
-            # generate random action for minotaur
-            a = np.random.randint(0,5)
-            # find next state
-            next_state = self.update_state((policy_forward,a))
-            state_list.append(next_state)
-            policy_list.append(policy_forward)
-            current_state = next_state
+        for i in range(10000):        
+            #forward iteration of self.policy starting from state (0,0,4,4)
+            #policy_forward = np.zeros(self.T)
+            policy_list = []
+            state_list = []
+            current_state = ((0,0),(4,4))
+            state_list.append(current_state)   
             self.p = np.array(current_state[0])
             self.m = np.array(current_state[1])
 
-        print(state_list)
+            for t in range(self.T-1):
+                # find state mapping for current state
+                current_state_idx = self.states_mapping[current_state]
+                # find self.policy for player movement
+                policy_forward = self.policy[current_state_idx,t]
+
+                # generate random action for minotaur
+                a = np.random.randint(0,5)
+                # find next state
+                next_state = self.update_state((policy_forward,a))
+                state_list.append(next_state)
+                policy_list.append(policy_forward)
+                current_state = next_state
+                self.p = np.array(current_state[0])
+                self.m = np.array(current_state[1])
+                if (self.p[0] == self.m[0]) and (self.p[1] == self.m[1]):
+                    print('DEAD!!')
+                    print('')
+
+            #print(state_list)
+            print('i = ' +str(i))
 
 
             #if delta < 1e-9:
             #    break
 
-        #forward iteration of policy starting from state (0,0,4,4)
+        #forward iteration of self.policy starting from state (0,0,4,4)
         # to be checked!
        ##policy_forward = np.zeros(self.T)
        #current_state = ((0,0),(4,4))
        #for t in range(0, self.T):
-       #    current_state_idx = states_mapping[current_state]
-       #    policy_forward[t] = policy[current_state_idx,t]
+       #    current_state_idx = self.states_mapping[current_state]
+       #    policy_forward[t] = self.policy[current_state_idx,t]
 
        #    next_state = self.update_state(current_state)
        #    current_state = next_state
