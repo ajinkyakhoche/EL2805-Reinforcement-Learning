@@ -281,50 +281,6 @@ class MDP():
                     if np.all(next_locations_player[a_p] == next_locations_minotaur[a_m]):
                         forbidden_actions_player[a_p] = 1
 
-        # for next_p_tuple, next_m in all_next_states:
-
-        #     next_p = next_p_tuple[0]  #location
-        #     p_mov = next_p_tuple[1]   #movement leading to that location
-
-
-        #     dist = sqrt( (next_m[0] - next_p[0])**2 + (next_m[1] - next_p[1])**2 )
-
-
-            #cbeck killing-zone restrictions from the next state
-            # if dist <= 1:   #minotaur is in KILLING ZONE! very close positions or the same position
-            #     if next_p[0] == next_m[0]:    # their x coordinates align
-            #         if next_p[1] - next_m[1] == 1:            #Minotaur is going to be on the LEFT of player
-            #             forbidden_actions_player[p_mov] = 1
-            #             print('minotaur is on the left')
-            #         elif next_p[1] - next_m[1] == -1:         #Minotaur is going to be  on the RIGHT of player
-            #             forbidden_actions_player[p_mov] = 1
-            #             print('minotaur is on the right')
-            #         elif next_p[1] - next_m[1] == 0:          #Minotaur and player in the same position
-            #             forbidden_actions_player[p_mov] = 1                               #
-            #             print('killing position is next')
-            #     if next_p[1] == next_m[1]:    # their y coordinates align
-            #         if next_p[1] - next_m[1] == 1:            #Minotaur is going to be  on TOP of player
-            #             forbidden_actions_player[p_mov] = 1
-            #             print('minotaur is on the top')
-            #         elif next_p[1] - next_m[1] == -1:         #Minotaur is going to be  on the BOTTOM of player
-            #             forbidden_actions_player[p_mov] = 1
-            #             print('minotaur is on the bottom')
-
-                
-            #     if next_p[0] == next_m[0]:    # their x coordinates align
-            #         if next_p[1] - next_m[1] == 1:            #Minotaur is going to be on the LEFT of player
-            #             forbidden_actions_player[p_mov] = 1
-            #         elif next_p[1] - next_m[1] == -1:         #Minotaur is going to be  on the RIGHT of player
-            #             forbidden_actions_player[p_mov] = 1
-            #         elif next_p[1] - next_m[1] == 0:          #Minotaur and player in the same position
-            #             forbidden_actions_player[p_mov] = 1                               #
-            #             print('killing position is next')
-            #     if next_p[1] == next_m[1]:    # their y coordinates align
-            #         if next_p[1] - next_m[1] == 1:            #Minotaur is going to be  on TOP of player
-            #             forbidden_actions_player[p_mov] = 1
-            #         elif next_p[1] - next_m[1] == -1:         #Minotaur is going to be  on the BOTTOM of player
-            #             forbidden_actions_player[p_mov] = 1
-
         n_possible_actions_player = np.count_nonzero(forbidden_actions_player == 0) #number of possible safe actions for player
 
         probability_parameter = 1.0/(n_possible_actions_player * self.n_actions_m)  #since Minotaur can always have all actions
@@ -397,6 +353,7 @@ class MDP():
         winning_position_states_indx = [states_mapping[((4,4), minotaur_pos)] for minotaur_pos in all_positions]
         #winning_position_states_indx = states_mapping[((100,100), (100,100))]
         state_values[winning_position_states_indx, self.T-1] = 1
+        #state_values[states_mapping[((100,100), (100,100))], self.T-1] = 1
 
         # in all other states, terminal reward is zero
 
@@ -419,9 +376,9 @@ class MDP():
                     state_values[i,t] = 0
                     policy[i,t] = 5 #moving dead state
                 # Marginalize probability for action_player = 6 (moving to winning state):
-                elif np.sum(self.p_sHat[6,:]) == 1: 
-                    state_values[i,t] = 0
-                    policy[i,t] = 6 #moving to winning state
+                # elif np.sum(self.p_sHat[6,:]) == 1: 
+                #     state_values[i,t] = 0
+                #     policy[i,t] = 6 #moving to winning state
                 else:
                     # Generate all possible actions in pairs (player action, minotaur action)
                     all_acceptable_actions = [pair for pair in itertools.product(self.acceptable_actions_player, self.actions_m)]
@@ -435,8 +392,8 @@ class MDP():
                         next_state = self.update_state((action_p, action_m))
 
                         #find reward for current state: if state is WIN then reward is 1, 0 otherwise
-                        # if np.all(self.p == self.win):
-                        #     self.reward = 1
+                        if np.all(self.p == self.win):
+                            self.reward = 1
 
                         #define the probability of performing that action
                         transition_prob = self.p_sHat[action_p, action_m]
@@ -481,7 +438,7 @@ class MDP():
         self.p = np.array(current_state[0])
         self.m = np.array(current_state[1])
 
-        for t in range(self.T):
+        for t in range(self.T-1):
             # find state mapping for current state
             current_state_idx = states_mapping[current_state]
             # find policy for player movement
