@@ -395,6 +395,7 @@ class MDP():
 
         # states (4,4,_,_) are equivalent to WIN state
         winning_position_states_indx = [states_mapping[((4,4), minotaur_pos)] for minotaur_pos in all_positions]
+        #winning_position_states_indx = states_mapping[((100,100), (100,100))]
         state_values[winning_position_states_indx, self.T-1] = 1
 
         # in all other states, terminal reward is zero
@@ -413,9 +414,14 @@ class MDP():
                 self.calc_transition_prob()
                 
                 #if np.count_nonzero(self.p_sHat[0,4,:]) == 0:
-                if np.sum(self.p_sHat[5,:]) == 1: # For sure dead x(
+                # Marginalize probability for action_player = 5 (moving to dead state):
+                if np.sum(self.p_sHat[5,:]) == 1: 
                     state_values[i,t] = 0
-                    policy[i,t] = 5 #dead state
+                    policy[i,t] = 5 #moving dead state
+                # Marginalize probability for action_player = 6 (moving to winning state):
+                elif np.sum(self.p_sHat[6,:]) == 1: 
+                    state_values[i,t] = 0
+                    policy[i,t] = 6 #moving to winning state
                 else:
                     # Generate all possible actions in pairs (player action, minotaur action)
                     all_acceptable_actions = [pair for pair in itertools.product(self.acceptable_actions_player, self.actions_m)]
@@ -429,8 +435,8 @@ class MDP():
                         next_state = self.update_state((action_p, action_m))
 
                         #find reward for current state: if state is WIN then reward is 1, 0 otherwise
-                        if np.all(self.p == self.win):
-                            self.reward = 1
+                        # if np.all(self.p == self.win):
+                        #     self.reward = 1
 
                         #define the probability of performing that action
                         transition_prob = self.p_sHat[action_p, action_m]
@@ -451,7 +457,8 @@ class MDP():
                     state_values[i, t] = new_state_value
 
                     # keep player's action that lead to the best state value
-                    policy[i, t] = all_acceptable_actions[np.argmax(np.round(action_returns, 5))][0]
+                    #policy[i, t] = all_acceptable_actions[np.argmax(np.round(action_returns, 5))][0]
+                    policy[i, t] = all_acceptable_actions[np.argmax(action_returns)][0]
 
                     #print(state_values[i, t]) #, 'action:', self.index_actions_p[policy[i, t]])
         
@@ -469,7 +476,7 @@ class MDP():
         #policy_forward = np.zeros(self.T)
         policy_list = []
         state_list = []
-        current_state = ((3,4),(4,4))
+        current_state = ((0,0),(4,4))
         state_list.append(current_state)   
         self.p = np.array(current_state[0])
         self.m = np.array(current_state[1])
