@@ -359,13 +359,13 @@ class MDP():
         return (next_player_location, next_minotaur_location)
 
     def value_iteration(self):
-        print('###|######')
-        print('#  |     #')
-        print('#  |  |__#')
-        print('#  |  |  #')
-        print('# ______ #')
-        print('#     |  #')
-        print('##########')
+       ##print('###|######')
+       #print('#  |     #')
+       #print('#  |  |__#')
+       #print('#  |  |  #')
+       #print('# ______ #')
+       #print('#     |  #')
+       #print('##########')
 
         # Generate all possible states (player_location, minotaur_location)
         all_positions = [positions_pair for positions_pair in itertools.product(range(self.GRID_SIZE_ROW), range(
@@ -449,60 +449,52 @@ class MDP():
 
                     # print(state_values[i, t]) #, 'action:', self.index_actions_p[policy[i, t]])
 
-            if np.sum(np.abs(old_state_values - state_values)) < 1e-4:
+            if np.sum(np.abs(old_state_values - state_values)) < 1e-20:
                 print('Out of the maze! Yay!')
                 break
 
         print('got here')
 
         '''PLOT RESULTS'''
-        # x axis of plot: Time 't'
-        xx = np.linspace(1, 15, 15)
-        # y axis of plot: Maximal probability of exiting the maze at time 't'
-        yy = np.amax(state_values, axis=0)
+      #  # x axis of plot: Time 't'
+      #  xx = np.linspace(1, 15, 15)
+      #  # y axis of plot: Maximal probability of exiting the maze at time 't'
+      #  yy = np.amax(state_values, axis=0)
+#
+      #  plt.plot(xx, yy)
 
-        plt.plot(xx, yy)
-
-        # forward iteration of policy starting from state (0,0,4,4)
-        # policy_forward = np.zeros(self.T)
+      # forward iteration of policy starting from state (0,0,4,4)
+      # policy_forward = np.zeros(self.T)
         policy_list = []
         state_list = []
-        current_state = ((3, 4), (4, 4))
+        current_state = ((0, 0), (4, 4))
         state_list.append(current_state)
         self.p = np.array(current_state[0])
         self.m = np.array(current_state[1])
 
-        for t in range(self.T):
+        while(np.all(self.p != np.array([4,4])) or  np.all(self.p != np.array([-100,-100])) ):
+
+            print('Player is at: ', current_state[0])
+
+            if (np.all(self.p == self.m)):
+                print("*****DEAD")
             # find state mapping for current state
             current_state_idx = states_mapping[current_state]
             # find policy for player movement
-            policy_forward = policy[current_state_idx, t]
+            next_mov = policy[current_state_idx]
 
             # generate random action for minotaur
             a = np.random.randint(0, 5)
             # find next state
-            next_state = self.update_state((policy_forward, a))
+            next_state = self.update_state((next_mov, a))
             state_list.append(next_state)
-            policy_list.append(policy_forward)
+            policy_list.append(next_mov)
             current_state = next_state
             self.p = np.array(current_state[0])
             self.m = np.array(current_state[1])
 
         print(state_list)
 
-        # if delta < 1e-9:
-        #    break
-
-        # forward iteration of policy starting from state (0,0,4,4)
-        # to be checked!
-    ##policy_forward = np.zeros(self.T)
-    # current_state = ((0,0),(4,4))
-    # for t in range(0, self.T):
-    #    current_state_idx = states_mapping[current_state]
-    #    policy_forward[t] = policy[current_state_idx,t]
-
-    #    next_state = self.update_state(current_state)
-    #    current_state = next_state
 
 
 def test():
