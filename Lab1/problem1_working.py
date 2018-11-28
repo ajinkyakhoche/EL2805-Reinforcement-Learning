@@ -49,8 +49,10 @@ class MDP():
         self.actions_p = [0, 1, 2, 3, 4]
         self.index_actions_p = ['left', 'up', 'right', 'down', 'stay']
 
-        self.actions_m = [0, 1, 2, 3, 4]
-        self.index_actions_m = ['left', 'up', 'right', 'down', 'stay']
+        #self.actions_m = [0, 1, 2, 3, 4]
+        self.actions_m = [0, 1, 2, 3]
+        #self.index_actions_m = ['left', 'up', 'right', 'down', 'stay']
+        self.index_actions_m = ['left', 'up', 'right', 'down']
 
         self.win_mov = 10  #leads to win state
         self.dead_mov = -10  #leads to dead state
@@ -342,18 +344,20 @@ class MDP():
 
         '''PLOT RESULTS'''
         # x axis of plot: Time 't'
-        xx = np.linspace(1, 15, 15)
+        xx = np.linspace(0, 14, 15)
         # y axis of plot: Maximal probability of exiting the maze at time 't'
         yy = np.amax(self.state_values, axis=0)
-        plt.plot(xx, yy)
-        plt.savefig('problem1b_maxprob.png')
+        #plt.plot(xx, yy)
+        #plt.savefig('problem1b_maxprob.png')
 
         num_wins = 0
-        num_games = 100
-
+        num_games = 10000
+        distribution_winning = []
+        distribution_dead = []
         for i in range(num_games):
             policy_list = []
             state_list = []
+
             current_state = ((0,0),(4,4))
             state_list.append(current_state)
             self.p = np.array(current_state[0])
@@ -372,12 +376,14 @@ class MDP():
                 policy_list.append(player_mov)
 
                 if np.all(next_state == self.win):
-                    print("FREEDOM!")
+                    print("iteration "+str(i)+": FREEDOM!")
                     num_wins += 1
+                    distribution_winning.append(t)
                     break
 
                 if np.all(next_state == self.dead):
-                    print("DEAD!")
+                    print("iteration " +str(i) + ": DEAD!")
+                    distribution_dead.append(t)
                     break
 
                 current_state = next_state
@@ -385,8 +391,9 @@ class MDP():
                 self.m = np.array(current_state[1])
 
 
-            print(state_list)
-
+            #print(state_list)
+        # use line below to plot pdf of winning w.r.t T
+        #plt.hist(np.array(distribution_winning), bins=xx)
         print('Total number of wins:', num_wins, 'out of %d games' %num_games)
 
 
