@@ -1,0 +1,65 @@
+import numpy as np
+import random
+from Lab1.problem3_env import Env
+
+class QLearning():
+
+    def __init__(self):
+
+        self.num_moves = 10000000
+
+        self.QValues = np.zeros(( self.environment.NUM_STATES,  self.environment.NUM_ACTIONS))
+        self.environment = Env()   #Environment class with the model
+
+        #PARAMETERS
+        self.epsilon = 0.1  #egreedy policy
+        self.alpha = 0.5    #learning rate
+
+        self.sum_rewards = 0
+
+
+    def egreedy_policy(self, state_indx):
+        '''
+        Choose an action based on a epsilon greedy policy.
+        A random action is selected with epsilon probability, else select the best action.
+        '''
+
+        if np.random.random() < self.epsilon:
+            #first find possible actions(robber's movements)
+            robber_moves_permitted = self.environment.check_wall_constraint('robber')
+            return random.sample(robber_moves_permitted, 1)
+        else:
+            return np.argmax(self.QValues[state_indx])
+
+    ###NOTE: all states mentions refer to indexes, not the actual positions
+    def q_learning(self):
+        '''
+        Implement Q-Learning Algorithm
+        '''
+
+        # initialize position of robber and police
+        cur_state_indx = self.environment.reset_game()
+
+        for i in range(self. self.num_moves):
+
+            # choose action
+            action = self.egreedy_policy(cur_state_indx)
+            # perform action --> move to new state and get reward
+            new_state_indx = self.environment.next_step(action)
+            self.sum_rewards += self.environment.reward
+            # find state value in next_state
+            new_value = self.environment.reward + self.environment.lamda * np.max(self.QValues[new_state_indx])
+            # compare it with action value in cur_state and action
+            difference = new_value - self.QValues[cur_state_indx, action]
+            # update QValue in cur_state
+            self.QValues[cur_state_indx,action] += difference
+
+            #update cur_state
+            cur_state_indx = new_state_indx
+
+
+
+
+
+
+
