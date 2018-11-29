@@ -21,10 +21,12 @@ class Env():
         # state: (robber position, police position)
 
         self.robber = (0,0)
-        self.police = (4,4)
+        self.police = (3,3)
 
         self.bank = (1,1) #location of bank - doesnt change
 
+        # Container for walls
+        self.walls = np.zeros((self.GRID_SIZE_ROW, self.GRID_SIZE_COL, 4), dtype=np.int)
 
         '''States'''
         self.define_states()
@@ -37,6 +39,7 @@ class Env():
         4:  Stay
         '''
         self.actions_robber = [0, 1, 2, 3, 4]
+        self.NUM_ACTIONS = len(self.actions_robber)
         self.police_movements = [0, 1, 2, 3]
         self.num_movs_robber = len(self.actions_robber)
         self.num_movs_police = len(self.police_movements)
@@ -46,6 +49,8 @@ class Env():
 
         '''Infinite Discounted Time Horizon'''
         self.lamda = 0.8
+
+        self.define_wall()
 
     def define_states(self):
 
@@ -118,28 +123,28 @@ class Env():
         agent: robber or police
         '''
 
-        forbidden_actions = np.empty()
+        forbidden_actions = np.empty(self.num_movs_police)
         agent_position = (-1,-1)
 
         if agent == 'robber':
-            forbidden_actions = np.zeros(self.num_movs_robber)
             agent_position = self.robber
+            forbidden_actions = np.zeros(self.num_movs_robber)
         elif agent == 'police':
-            forbidden_actions = np.zeros(self.num_movs_police)
             agent_position = self.police
+            forbidden_actions = np.zeros(self.num_movs_police)
 
         if self.walls[agent_position[0], agent_position[1], 0] == 1:  # agent's LEFT side is blocked
             forbidden_actions[0] = 1
-        if self.walls[agent_position, agent_position, 1] == 1:  # agent's TOP side is blocked
+        if self.walls[agent_position[0], agent_position[1], 1] == 1:  # agent's TOP side is blocked
             forbidden_actions[1] = 1
-        if self.walls[agent_position, agent_position, 2] == 1:  # agent's RIGHT side is blocked
+        if self.walls[agent_position[0], agent_position[1], 2] == 1:  # agent's RIGHT side is blocked
             forbidden_actions[2] = 1
-        if self.walls[agent_position, agent_position, 3] == 1:  # agent's BOTTOM side is blocked
+        if self.walls[agent_position[0], agent_position[1], 3] == 1:  # agent's BOTTOM side is blocked
             forbidden_actions[3] = 1
 
         actions_permitted = [value[0] for value in np.argwhere(forbidden_actions == 0).tolist()]
 
-        return actions_permitted
+        return actions_permitted   #
 
     def next_step(self, action):
         '''
@@ -153,7 +158,7 @@ class Env():
 
         #todo: move police closer to the robber
         wall_permitted_actions_police = self.check_wall_constraint('police')
-        police_movement = random.sample(wall_permitted_actions_police)   #police moves randomily!
+        police_movement = np.random.choice(wall_permitted_actions_police)   #police moves randomily!
         self.police = self.move_agent('police', police_movement)
 
         self.assign_reward()
@@ -174,15 +179,18 @@ class Env():
         elif np.all(self.robber == self.bank):
             self.reward = 1
         # the robber and the police are in neighbour cells
-        elif np.linalg.norm(self.robber-self.police) == 1 :
+        elif np.linalg.norm(np.array([self.robber[0], self.robber[1]])-np.array([self.police[0],self.police[1]])) == 1 :
             self.reward = -5
 
 
     def reset_game(self):
 
         self.robber = (0,0)
-        self.police = (4,4)
+        self.police = (3,3)
 
         state_indx = self.states_mapping[(self.robber, self.police)]
 
         return state_indx
+
+
+

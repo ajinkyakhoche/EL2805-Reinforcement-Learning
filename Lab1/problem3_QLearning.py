@@ -7,9 +7,9 @@ class QLearning():
     def __init__(self):
 
         self.num_moves = 10000000
+        self.environment = Env()  # Environment class with the model
 
         self.QValues = np.zeros(( self.environment.NUM_STATES,  self.environment.NUM_ACTIONS))
-        self.environment = Env()   #Environment class with the model
 
         #PARAMETERS
         self.epsilon = 0.1  #egreedy policy
@@ -24,15 +24,15 @@ class QLearning():
         A random action is selected with epsilon probability, else select the best action.
         '''
 
+        robber_moves_permitted = self.environment.check_wall_constraint('robber')
         if np.random.random() < self.epsilon:
             #first find possible actions(robber's movements)
-            robber_moves_permitted = self.environment.check_wall_constraint('robber')
             return random.sample(robber_moves_permitted, 1)
         else:
-            return np.argmax(self.QValues[state_indx])
+            return np.argmax(self.QValues[state_indx, robber_moves_permitted])
 
     ###NOTE: all states mentions refer to indexes, not the actual positions
-    def q_learning(self):
+    def apply_qlearning(self):
         '''
         Implement Q-Learning Algorithm
         '''
@@ -40,7 +40,7 @@ class QLearning():
         # initialize position of robber and police
         cur_state_indx = self.environment.reset_game()
 
-        for i in range(self. self.num_moves):
+        for i in range(self.num_moves):
 
             # choose action
             action = self.egreedy_policy(cur_state_indx)
@@ -58,8 +58,11 @@ class QLearning():
             cur_state_indx = new_state_indx
 
 
+def test():
 
+    qLearning_obj = QLearning()
+    qLearning_obj.apply_qlearning()
 
-
+test()
 
 
