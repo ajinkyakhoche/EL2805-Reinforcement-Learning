@@ -158,7 +158,7 @@ class Env():
 
         #todo: move police closer to the robber
         wall_permitted_actions_police = self.check_wall_constraint('police')
-        police_movement = random.sample(wall_permitted_actions_police, 1)   #police moves randomily!
+        police_movement = np.random.choice(wall_permitted_actions_police)   #police moves randomily!
         self.police = self.move_agent('police', police_movement)
 
         self.assign_reward()
