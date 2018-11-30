@@ -352,8 +352,8 @@ class MDP():
         num_games = 10000
 
         # distribution of win and dead for plotting histograms
-        distribution_win =[]
-        distribution_dead = []
+        distribution_win = np.zeros(self.T)
+        distribution_dead = np.zeros(self.T)
 
         for i in range(num_games):
             policy_list = []
@@ -379,13 +379,13 @@ class MDP():
                     print("FREEDOM!")
                     num_wins += 1
                     # note time when player won
-                    distribution_win.append(t)
+                    distribution_win[t] += 1
                     break
 
                 if np.all(next_state == self.dead):
                     print("DEAD!")
                     # note time when player died
-                    distribution_dead.append(t)
+                    distribution_dead[t] += 1
                     break
 
                 current_state = next_state
