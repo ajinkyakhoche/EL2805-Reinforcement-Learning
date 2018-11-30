@@ -28,6 +28,8 @@ class QLearning():
 
         self.optimal_policy = np.zeros(self.environment.NUM_STATES)  # keep best action for each state
 
+        self.permitted_actions = dict()
+
 
     def egreedy_policy(self, state_indx):
         '''
@@ -37,8 +39,9 @@ class QLearning():
 
         # first find possible actions(robber's movements)
         robber_moves_permitted = self.environment.check_wall_constraint('robber')
+
         if np.random.random() < self.epsilon:
-            return np.random.choice(robber_moves_permitted )
+            return np.random.choice(robber_moves_permitted)
         else:
             QValues_permitted = self.QValues[state_indx, robber_moves_permitted]    #robber_moves_permitted
             indx = np.argmax(QValues_permitted)  #index in QValues permitted
@@ -51,7 +54,9 @@ class QLearning():
         moves = range(num_steps_done)
         if arg == 'valueF':
             plt.plot(moves, self.ValueF_init[0:num_steps_done])
-            plt.title('Value function for the intitial state over time')
+            plt.title('Value function for the initial state v/s time, obtained with Q-Learning')
+            plt.ylabel("Value fn at initial state)")
+            plt.xlabel("time")
             plt.savefig('Figures/problem3_%s%i.png' % (arg,num_steps_done))
             plt.show()
 
@@ -65,8 +70,7 @@ class QLearning():
          #   plt.plot(moves, self.)
 
 
-
-    ###NOTE: all states mentions refer to indexes, not the actual positions
+     ###NOTE: all states mentions refer to indexes, not the actual positions
     def apply_qlearning(self):
         '''
         Implement Q-Learning Algorithm
@@ -106,14 +110,19 @@ class QLearning():
 
     def find_policy(self):
         '''
-        find policy from the QValues matrix
+        find optimal policy from the QValues matrix
         '''
 
-        for state in range(self.environment.NUM_STATES):
-            self.optimal_policy[state] = np.argmax(self.QValues[state])
+        for state_indx in range(self.environment.NUM_STATES):
 
-        # plot policy over time
-        #self.myplot('policy', self.environment.NUM_STATES)
+            # optimal policy action should belong to the permitted actions!
+            state = self.environment.all_states[state_indx]
+            self.environment.robber = state[0]
+            self.environment.police = state[1]
+            permitted_actions = self.environment.check_wall_constraint('robber')
+            action_indx = np.argmax(self.QValues[state_indx, permitted_actions])
+            self.optimal_policy[ state_indx] = permitted_actions[action_indx]
+
 
     def simulate_game(self, num_rounds):
         '''
@@ -124,7 +133,9 @@ class QLearning():
         cur_state_indx = self.environment.reset_game()
         for t in range(num_rounds):
 
+            print('permitted actions:', self.permitted_actions[cur_state_indx])
             action = self.optimal_policy[cur_state_indx]
+            print('action chosen:', action)
             new_state_indx = self.environment.next_step(action)
             new_state = self.environment.all_states[new_state_indx]
             print('Move to state:',new_state)
@@ -136,12 +147,14 @@ class QLearning():
             elif self.environment.reward == -5:
                 game_stats['almost_caught'] += 1
 
-            cur_state_indx == new_state_indx
+            cur_state_indx = new_state_indx
 
         print('---- GAME STATISTICS (%d moves) ----' %num_rounds)
         print('Managed to rob the bank: %d times' %game_stats['win'])
         print('Got caught by the police: %d times' %game_stats['caught'])
         print('Got very close to the police: %d times' % game_stats['almost_caught'])
+
+
 
 def test():
 
