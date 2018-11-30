@@ -199,8 +199,9 @@ class Sarsa():
                     self.ValueF_init[i] = np.amax(self.QValues[self.init_state_indx])
                 self.plot_ValueF_epsilon(epsilon, epsilon_setting)
                 
-                np.savetxt('valueF_init.txt', self.ValueF_init, fmt='%d')
-                np.savetxt('epsilon_t.txt', self.epsilon_t, fmt='%d')
+                #np.savetxt('valueF_init.txt', self.ValueF_init, fmt='%d')
+                #np.savetxt('epsilon_t.txt', self.epsilon_t, fmt='%d')
+                np.savetxt('QValues_1_0.1.txt', self.QValues, fmt='%d')
 
 
 def test():
