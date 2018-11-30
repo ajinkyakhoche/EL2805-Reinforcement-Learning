@@ -342,14 +342,18 @@ class MDP():
 
         '''PLOT RESULTS'''
         # x axis of plot: Time 't'
-        xx = np.linspace(1, 15, 15)
+        #xx = np.linspace(1, 15, 15)
         # y axis of plot: Maximal probability of exiting the maze at time 't'
-        yy = np.amax(self.state_values, axis=0)
-        plt.plot(xx, yy)
-        plt.savefig('problem1b_maxprob.png')
+        #yy = np.amax(self.state_values, axis=0)
+        #plt.plot(xx, yy)
+        #plt.savefig('problem1b_maxprob.png')
 
         num_wins = 0
-        num_games = 100
+        num_games = 10000
+
+        # distribution of win and dead for plotting histograms
+        distribution_win =[]
+        distribution_dead = []
 
         for i in range(num_games):
             policy_list = []
@@ -374,10 +378,14 @@ class MDP():
                 if np.all(next_state == self.win):
                     print("FREEDOM!")
                     num_wins += 1
+                    # note time when player won
+                    distribution_win.append(t)
                     break
 
                 if np.all(next_state == self.dead):
                     print("DEAD!")
+                    # note time when player died
+                    distribution_dead.append(t)
                     break
 
                 current_state = next_state
@@ -385,8 +393,18 @@ class MDP():
                 self.m = np.array(current_state[1])
 
 
-            print(state_list)
-
+            #print(state_list)
+        # Plot histogram of player's performance
+        xx = np.linspace(0, self.T-1, self.T)
+        distribution_win[:] = [x / num_games for x in distribution_win]
+        distribution_dead[:] = [x / num_games for x in distribution_dead]
+        plt.hist(np.array(distribution_win), bins=xx)
+        plt.hist(np.array(distribution_dead), bins=xx) 
+        plt.title("Max. probability of exiting maze v/s time")
+        plt.xlabel('time')
+        plt.ylabel('Probability')
+        plt.legend(['Player won', 'Player died'])
+        plt.show()
         print('Total number of wins:', num_wins, 'out of %d games' %num_games)
 
 
