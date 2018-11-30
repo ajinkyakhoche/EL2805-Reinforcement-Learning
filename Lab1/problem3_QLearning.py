@@ -26,6 +26,8 @@ class QLearning():
 
         self.ValueF_init = np.zeros(self.num_moves)
 
+        self.optimal_policy = np.zeros(self.environment.NUM_STATES)  # keep best action for each state
+
 
     def egreedy_policy(self, state_indx):
         '''
@@ -42,18 +44,27 @@ class QLearning():
             indx = np.argmax(QValues_permitted)  #index in QValues permitted
             return robber_moves_permitted[indx]
 
-    def plot_ValueF(self, arg):
+    def myplot(self, arg, num_steps_done):
         '''
         plot yy throughout the game
         '''
-        moves = range(self.num_moves)
+        moves = range(num_steps_done)
         if arg == 'valueF':
-            plt.plot(moves, self.ValueF_init)
-        elif arg == 'sumRewards':
-            plt.plot(moves, self.sum_rewards_list)
+            plt.plot(moves, self.ValueF_init[0:num_steps_done])
+            plt.title('Value function for the intitial state over time')
+            plt.savefig('Figures/problem3_%s%i.png' % (arg,num_steps_done))
+            plt.show()
 
-        plt.savefig('Figures/problem3_%s.png' %arg)
-        plt.show()
+        elif arg == 'sumRewards':
+            plt.plot(moves, self.sum_rewards_list[0:num_steps_done])
+            plt.title('%s' % arg)
+            plt.savefig('Figures/problem3_%s%i.png' % (arg, num_steps_done))
+            plt.show()
+
+        #elif arg == 'policy':
+         #   plt.plot(moves, self.)
+
+
 
     ###NOTE: all states mentions refer to indexes, not the actual positions
     def apply_qlearning(self):
@@ -81,23 +92,63 @@ class QLearning():
             self.step_size = float(1/pow(self.num_updates[cur_state_indx,action], float(2/3)))
             # update QValue in cur_state
             self.QValues[cur_state_indx,action] += self.step_size * difference
-            print('state: %d' %cur_state_indx, 'action: %d'%action, 'QValue:%f'% self.QValues[cur_state_indx,action])
+            #print('state: %d' %cur_state_indx, 'action: %d'%action, 'QValue:%f'% self.QValues[cur_state_indx,action])
             #update cur_state
             cur_state_indx = new_state_indx
 
             #update valueF for the initial state
             self.ValueF_init[i] = np.amax(self.QValues[self.init_state_indx])
 
+            if i % 1000000 == 0:
+                print('---------%d------------'%i)
 
-        self.myplot('valueF')
-        self.myplot('sumRewards')
+        self.myplot('valueF', i)
 
+    def find_policy(self):
+        '''
+        find policy from the QValues matrix
+        '''
 
+        for state in range(self.environment.NUM_STATES):
+            self.optimal_policy[state] = np.argmax(self.QValues[state])
+
+        # plot policy over time
+        #self.myplot('policy', self.environment.NUM_STATES)
+
+    def simulate_game(self, num_rounds):
+        '''
+        simulate a game using the optimal policy found
+        '''
+
+        game_stats = {'win':0, 'caught':0, 'almost_caught':0}
+        cur_state_indx = self.environment.reset_game()
+        for t in range(num_rounds):
+
+            action = self.optimal_policy[cur_state_indx]
+            new_state_indx = self.environment.next_step(action)
+            new_state = self.environment.all_states[new_state_indx]
+            print('Move to state:',new_state)
+
+            if self.environment.reward == 1:
+                game_stats['win'] += 1
+            elif self.environment.reward == -10:
+                game_stats['caught'] += 1
+            elif self.environment.reward == -5:
+                game_stats['almost_caught'] += 1
+
+            cur_state_indx == new_state_indx
+
+        print('---- GAME STATISTICS (%d moves) ----' %num_rounds)
+        print('Managed to rob the bank: %d times' %game_stats['win'])
+        print('Got caught by the police: %d times' %game_stats['caught'])
+        print('Got very close to the police: %d times' % game_stats['almost_caught'])
 
 def test():
 
     qLearning_obj = QLearning()
     qLearning_obj.apply_qlearning()
+    qLearning_obj.find_policy()
+    qLearning_obj.simulate_game(100)
 
 
 test()
