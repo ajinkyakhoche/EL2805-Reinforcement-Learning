@@ -2,6 +2,7 @@ import numpy as np
 import random
 from problem3_env import Env
 import matplotlib.pyplot as plt
+from tempfile import TemporaryFile
 
 class Sarsa():
 
@@ -23,7 +24,7 @@ class Sarsa():
         1: smooth step wise reduction
         2: keep constant high epsilon
         '''
-        self.epsilon_setting = {0,1,2}
+        self.epsilon_setting = {1}
         self.epsilon_list = {0.1}   # can try different values of epsilon.
          
         self.epsilon_t = np.zeros(self.num_moves)     # epsilon with time
@@ -88,6 +89,47 @@ class Sarsa():
         f2.show()
         f1.savefig('prob3_sarsa_valueF_' + str(curr_epsilon_setting)+'_'+str(curr_epsilon)+'.png')
         f2.savefig('prob3_sarsa_epsilon_'+ str(curr_epsilon_setting)+'_'+ str(curr_epsilon)+'.png')
+
+    
+    def find_policy(self):
+        '''
+        find policy from the QValues matrix
+        '''
+
+        for state in range(self.environment.NUM_STATES):
+            self.optimal_policy[state] = np.argmax(self.QValues[state])
+
+        # plot policy over time
+        #self.myplot('policy', self.environment.NUM_STATES)
+    
+    
+    def simulate_game(self, num_rounds):
+        '''
+        simulate a game using the optimal policy found
+        '''
+
+        game_stats = {'win':0, 'caught':0, 'almost_caught':0}
+        cur_state_indx = self.environment.reset_game()
+        for t in range(num_rounds):
+
+            action = self.optimal_policy[cur_state_indx]
+            new_state_indx = self.environment.next_step(action)
+            new_state = self.environment.all_states[new_state_indx]
+            print('Move to state:',new_state)
+
+            if self.environment.reward == 1:
+                game_stats['win'] += 1
+            elif self.environment.reward == -10:
+                game_stats['caught'] += 1
+            elif self.environment.reward == -5:
+                game_stats['almost_caught'] += 1
+
+            cur_state_indx == new_state_indx
+
+        print('---- GAME STATISTICS (%d moves) ----' %num_rounds)
+        print('Managed to rob the bank: %d times' %game_stats['win'])
+        print('Got caught by the police: %d times' %game_stats['caught'])
+        print('Got very close to the police: %d times' % game_stats['almost_caught'])
 
     
     def sarsa_algo(self):
@@ -156,6 +198,9 @@ class Sarsa():
                     #update valueF for the initial state
                     self.ValueF_init[i] = np.amax(self.QValues[self.init_state_indx])
                 self.plot_ValueF_epsilon(epsilon, epsilon_setting)
+                
+                np.savetxt('valueF_init.txt', self.ValueF_init, fmt='%d')
+                np.savetxt('epsilon_t.txt', self.epsilon_t, fmt='%d')
 
 
 def test():
