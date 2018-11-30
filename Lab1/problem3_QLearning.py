@@ -133,7 +133,6 @@ class QLearning():
         cur_state_indx = self.environment.reset_game()
         for t in range(num_rounds):
 
-            print('permitted actions:', self.permitted_actions[cur_state_indx])
             action = self.optimal_policy[cur_state_indx]
             print('action chosen:', action)
             new_state_indx = self.environment.next_step(action)
@@ -161,7 +160,7 @@ def test():
     qLearning_obj = QLearning()
     qLearning_obj.apply_qlearning()
     qLearning_obj.find_policy()
-    qLearning_obj.simulate_game(100)
+    qLearning_obj.simulate_game(1000)
 
 
 test()
