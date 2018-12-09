@@ -49,10 +49,10 @@ class MDP():
         self.actions_p = [0, 1, 2, 3, 4]
         self.index_actions_p = ['left', 'up', 'right', 'down', 'stay']
 
-        self.actions_m = [0, 1, 2, 3, 4]
-        #self.actions_m = [0, 1, 2, 3]
-        self.index_actions_m = ['left', 'up', 'right', 'down', 'stay']
-        #self.index_actions_m = ['left', 'up', 'right', 'down']
+        #self.actions_m = [0, 1, 2, 3, 4]	#79.27%
+        self.actions_m = [0, 1, 2, 3]		#80.70%
+        #self.index_actions_m = ['left', 'up', 'right', 'down', 'stay']
+        self.index_actions_m = ['left', 'up', 'right', 'down']
 
         self.win_mov = 10  #leads to win state
         self.dead_mov = -10  #leads to dead state
@@ -407,6 +407,7 @@ class MDP():
         plt.plot(xx, distribution_win)
         plt.plot(xx, distribution_dead) 
         plt.title("Max. probability of exiting maze v/s time")
+        plt.axis([1,15,0.0,0.6])
         plt.xlabel('time')
         plt.ylabel('Probability')
         plt.legend(['Player won', 'Player died'])
