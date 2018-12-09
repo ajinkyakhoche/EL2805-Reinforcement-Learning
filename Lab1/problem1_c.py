@@ -65,6 +65,8 @@ class MDP():
         # State transition matrix: each cell (x,y) contains the probability of performing the action (x,y)
         self.p_sHat = np.zeros((self.n_actions_p, self.n_actions_m))
 
+        self.discount_factor = float(29/30)
+
         '''Member Function'''
         self.define_wall()
         # simulate game (movement between player and minotaur)
@@ -323,7 +325,7 @@ class MDP():
                         transition_prob = self.p_sHat[action_p, action_m]
 
                         next_state_indx = self.states_mapping[next_state]
-                        expected_reward = transition_prob * (self.reward + self.state_values[next_state_indx])
+                        expected_reward = self.reward + self.discount_factor * transition_prob * self.state_values[next_state_indx]
                         action_returns.append(expected_reward)
 
                     new_state_value = np.max(action_returns)

@@ -325,7 +325,7 @@ class MDP():
                         transition_prob = self.p_sHat[action_p, action_m]
 
                         next_state_indx = self.states_mapping[next_state]
-                        expected_reward = transition_prob * (self.reward + self.state_values[next_state_indx, t + 1])
+                        expected_reward = self.reward + transition_prob * (self.state_values[next_state_indx, t + 1])
                         action_returns.append(expected_reward)
 
                     new_state_value = np.max(action_returns)
