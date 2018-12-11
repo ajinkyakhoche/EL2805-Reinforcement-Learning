@@ -8,7 +8,7 @@ from keras.layers import Dense
 from keras.optimizers import Adam
 from keras.models import Sequential
 
-EPISODES = 1000 #Maximum number of episodes
+EPISODES = 2000 #Maximum number of episodes
 
 #DQN Agent for the Cartpole
 #Q function approximation with NN, experience replay, and target network
@@ -25,13 +25,13 @@ class DQNAgent:
 ################################################################################
 ################################################################################
         #Set hyper parameters for the DQN. Do not adjust those labeled as Fixed.
-        self.discount_factor = 0.95
-        self.learning_rate = 0.005
+        self.discount_factor = 0.99
+        self.learning_rate = 0.001
         self.epsilon = 0.02 #Fixed
         self.batch_size = 32 #Fixed
-        self.memory_size = 1000
+        self.memory_size = 10000
         self.train_start = 1000 #Fixed
-        self.target_update_frequency = 1
+        self.target_update_frequency = 50
 ################################################################################
 ################################################################################
 
@@ -56,7 +56,9 @@ class DQNAgent:
         #Tip: Consult https://keras.io/getting-started/sequential-model-guide/
     def build_model(self):
         model = Sequential()
-        model.add(Dense(16, input_dim=self.state_size, activation='relu',
+        model.add(Dense(8, input_dim=self.state_size, activation='relu',
+                        kernel_initializer='he_uniform'))
+        model.add(Dense(8, activation='relu',
                         kernel_initializer='he_uniform'))
         model.add(Dense(self.action_size, activation='linear',
                         kernel_initializer='he_uniform'))
@@ -121,16 +123,19 @@ class DQNAgent:
         #Insert your Q-learning code here
         #Tip 1: Observe that the Q-values are stored in the variable target
         #Tip 2: What is the Q-value of the action taken at the last state of the episode?
-        y = np.zeros((self.batch_size,2))
+        # Source: https://keon.io/deep-q-learning/
         for i in range(self.batch_size): #For every batch
             #target[i][action[i]] = random.randint(0,1)
-            y[i,0] = reward[i] + self.discount_factor * np.amax(target_val[i,:])
-            y[i, 1] =  y[i,0]
+            if done[i]:
+                target[i][action[i]] = reward[i]
+            else:    
+                target[i][action[i]] = reward[i] + self.discount_factor * np.amax(target_val[i,:])
+            
 ###############################################################################
 ###############################################################################
 
         #Train the inner loop network -line11
-        self.model.fit(update_input, y, batch_size=self.batch_size,
+        self.model.fit(update_input, target, batch_size=self.batch_size,
                        epochs=1, verbose=0)
         return
 
