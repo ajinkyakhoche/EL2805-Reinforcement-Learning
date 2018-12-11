@@ -15,8 +15,8 @@ EPISODES = 1000 #Maximum number of episodes
 class DQNAgent:
     #Constructor for the agent (invoked when DQN is first called in main)
     def __init__(self, state_size, action_size):
-        self.check_solve = False	#If True, stop if you satisfy solution confition
-        self.render = False        #If you want to see Cartpole learning, then change to True
+        self.check_solve = True	#If True, stop if you satisfy solution confition
+        self.render = True        #If you want to see Cartpole learning, then change to True
 
         #Get size of state and action
         self.state_size = state_size
@@ -93,7 +93,7 @@ class DQNAgent:
 
     #Sample <s,a,r,s'> from replay memory
     def train_model(self):
-        print('train model!')
+        #print('train model!')
         if len(self.memory) < self.train_start: #Do not train if not enough memory
             return
         batch_size = min(self.batch_size, len(self.memory)) #Train on at most as many samples as you have in memory
