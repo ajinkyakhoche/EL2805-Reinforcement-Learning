@@ -8,7 +8,7 @@ from keras.layers import Dense
 from keras.optimizers import Adam
 from keras.models import Sequential
 
-EPISODES = 2000 #Maximum number of episodes
+EPISODES = 1000 #Maximum number of episodes
 
 #DQN Agent for the Cartpole
 #Q function approximation with NN, experience replay, and target network
@@ -31,7 +31,7 @@ class DQNAgent:
         self.batch_size = 32 #Fixed
         self.memory_size = 10000
         self.train_start = 1000 #Fixed
-        self.target_update_frequency = 50
+        self.target_update_frequency = 5
 ################################################################################
 ################################################################################
 
@@ -56,9 +56,9 @@ class DQNAgent:
         #Tip: Consult https://keras.io/getting-started/sequential-model-guide/
     def build_model(self):
         model = Sequential()
-        model.add(Dense(8, input_dim=self.state_size, activation='relu',
+        model.add(Dense(128, input_dim=self.state_size, activation='relu',
                         kernel_initializer='he_uniform'))
-        model.add(Dense(8, activation='relu',
+        model.add(Dense(128, activation='relu',
                         kernel_initializer='he_uniform'))
         model.add(Dense(self.action_size, activation='linear',
                         kernel_initializer='he_uniform'))
