@@ -1,0 +1,11 @@
+qvalues_0_40_0_001_5_32_nosoln.jpg
+
+Here _0_40_0_001_5_32_nosoln means the following:
+
+0_40 : discount factor of 0.40
+0_001: learning rate of 0.001
+5: update frequency of 5
+32: single layer NN of size 32 neurons. if double layer used, it's written as 8+8 or 32+32 etc
+nosoln: No solution found. if there's a number eg 211, this means the solution was found after 211 episodes
+
+
