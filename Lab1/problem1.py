@@ -49,10 +49,10 @@ class MDP():
         self.actions_p = [0, 1, 2, 3, 4]
         self.index_actions_p = ['left', 'up', 'right', 'down', 'stay']
 
-        #self.actions_m = [0, 1, 2, 3, 4]	#79.27%
-        self.actions_m = [0, 1, 2, 3]		#80.70%
-        #self.index_actions_m = ['left', 'up', 'right', 'down', 'stay']
-        self.index_actions_m = ['left', 'up', 'right', 'down']
+        self.actions_m = [0, 1, 2, 3, 4]	#79.27%
+        #self.actions_m = [0, 1, 2, 3]		#80.70%
+        self.index_actions_m = ['left', 'up', 'right', 'down', 'stay']
+        #self.index_actions_m = ['left', 'up', 'right', 'down']
 
         self.win_mov = 10  #leads to win state
         self.dead_mov = -10  #leads to dead state
@@ -339,7 +339,6 @@ class MDP():
 
         print('got here')
 
-
     def forward_iteration(self):
 
         '''PLOT RESULTS'''
@@ -379,15 +378,16 @@ class MDP():
 
                 if np.all(next_state == self.win):
                     print("FREEDOM!")
+                    print(t)
                     num_wins += 1
                     # note time when player won
-                    distribution_win[t]+=1
+                    distribution_win[t::]+=1
                     break
 
                 if np.all(next_state == self.dead):
                     print("DEAD!")
                     # note time when player died
-                    distribution_dead[t]+=1
+                    distribution_dead[t::]+=1
                     break
 
                 current_state = next_state
@@ -398,22 +398,24 @@ class MDP():
             #print(state_list)
         # Plot histogram of player's performance
         xx = np.linspace(0, self.T-1, self.T, dtype=int)
-        #distribution_win[:] = [x / num_games for x in distribution_win]
-        #distribution_dead[:] = [x / num_games for x in distribution_dead]
-        distribution_win=distribution_win/num_games
-        distribution_dead=distribution_dead/num_games
+        distribution_win[:] = [float(x / num_games) for x in distribution_win]
+        distribution_dead[:] = [float(x / num_games) for x in distribution_dead]
+        #distribution_win=distribution_win/num_games
+        #distribution_dead=distribution_dead/num_games
         #plt.hist(np.array(distribution_win), bins=xx)
         #plt.hist(np.array(distribution_dead), bins=xx)
         plt.plot(xx, distribution_win)
-        plt.plot(xx, distribution_dead) 
+        plt.plot(xx, distribution_dead)
         plt.title("Max. probability of exiting maze v/s time")
-        plt.axis([1,15,0.0,0.6])
+        plt.axis([1,15,0.0,1])
         plt.xlabel('time')
         plt.ylabel('Probability')
         plt.legend(['Player won', 'Player died'])
         plt.grid(which='both')
+        plt.savefig('problem1_b_stay.png')
         plt.show()
         print('Total number of wins:', num_wins, 'out of %d games' %num_games)
+
 
 
 def test():
